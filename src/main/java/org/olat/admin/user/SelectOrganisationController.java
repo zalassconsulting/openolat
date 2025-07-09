@@ -19,8 +19,7 @@
  */
 package org.olat.admin.user;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import org.olat.basesecurity.OrganisationEmailDomain;
 import org.olat.basesecurity.OrganisationModule;
@@ -68,6 +67,22 @@ public class SelectOrganisationController extends FormBasicController {
 
 	@Override
 	protected void initForm(FormItemContainer formLayout, Controller listener, UserRequest ureq) {
+
+        List<String> theKeys = new ArrayList<>();
+        List<String> theValues = new ArrayList<>();
+
+        for(Organisation organisation:organisations) {
+
+			SortedSet<Organisation> organizationsSet = new TreeSet<>(Comparator.comparing(Organisation::getRecursiveDisplayName));
+			organizationsSet.addAll(organisations);
+
+			for (Organisation o2 : organizationsSet) {
+				theKeys.add(o2.getKey().toString());
+				theValues.add(o2.getDisplayName());
+				theValues.add(o2.getRecursiveDisplayName());
+			}
+		}
+
 		organisationEl = uifactory.addOrgSelectorElement("select.organisation", formLayout,
 				getWindowControl(), organisations);
 		if (!organisations.isEmpty()) {

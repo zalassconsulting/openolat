@@ -32,6 +32,7 @@ import jakarta.persistence.FlushModeType;
 import jakarta.persistence.TemporalType;
 import jakarta.persistence.TypedQuery;
 
+import org.apache.commons.lang3.StringUtils;
 import org.olat.basesecurity.AuthenticationImpl;
 import org.olat.basesecurity.GroupMembershipInheritance;
 import org.olat.basesecurity.GroupRoles;
@@ -50,8 +51,12 @@ import org.olat.core.commons.persistence.SortKey;
 import org.olat.core.id.Identity;
 import org.olat.core.id.OrganisationRef;
 import org.olat.core.util.StringHelper;
+import org.olat.modules.curriculum.Curriculum;
+import org.olat.modules.curriculum.CurriculumElement;
 import org.olat.modules.curriculum.CurriculumRoles;
+import org.olat.repository.RepositoryEntry;
 import org.olat.repository.RepositoryEntryStatusEnum;
+import org.olat.user.JointForOpt;
 import org.olat.user.UserPropertiesConfig;
 import org.olat.user.propertyhandlers.GenericSelectionPropertyHandler;
 import org.olat.user.propertyhandlers.UserPropertyHandler;
@@ -301,10 +306,41 @@ public class IdentityPowerSearchQueriesImpl implements IdentityPowerSearchQuerie
 			sb.append(")");
 		} else if(params.hasOrganisations()) {
 			needsAnd = checkAnd(sb, needsAnd);
-			sb.append(" exists (select orgtomember.key from bgroupmember as orgtomember ")
+			sb.append(" ")
+					.append(params.getSearchVariants() != null ? JointForOpt.valueOf(params.getSearchVariants().get("organisations")).resExist() : "exists")
+					.append(" (select orgtomember.key from bgroupmember as orgtomember ")
 			  .append("  inner join organisation as org on (org.group.key=orgtomember.group.key)")
 			  .append("  where orgtomember.identity.key=ident.key and orgtomember.inheritanceModeString ").in(GroupMembershipInheritance.none, GroupMembershipInheritance.root)
 			  .append("  and org.key in (:organisationKey))");
+		}
+
+		if(params.getCourses() != null && !params.getCourses().isEmpty()) {
+			needsAnd = checkAnd(sb, needsAnd);
+			sb.append(" ")
+					.append(params.getSearchVariants() != null ? JointForOpt.valueOf(params.getSearchVariants().get("courses")).resExist() : "exists")
+			.append(" (select 1 from repoentrytobusinessgroup as rtg")
+			.append(" left join bgroupmember as bgm on (rtg.businessGroup.key = bgm.group.key)")
+			.append(" where bgm.identity.key = ident.key and bgm.role ").in(GroupRoles.participant, GroupRoles.coach)
+			.append(" and rtg.entry.key in (:courseKey))");
+		}
+
+		if(params.getCurriculums() != null && !params.getCurriculums().isEmpty()) {
+			needsAnd = checkAnd(sb, needsAnd);
+			sb.append(" ")
+					.append(params.getSearchVariants() != null ? JointForOpt.valueOf(params.getSearchVariants().get("learnpaths")).resExist() : "exists")
+					.append(" (select 1 from curriculumelement as cur")
+					.append(" left join bgroupmember as bgm on (cur.group.key = bgm.group.key)")
+					.append(" where bgm.identity.key = ident.key")
+					.append(" and cur.key in (:curKey))");
+		}
+
+		if(params.getFinished() != null && !params.getFinished().isEmpty()) {
+			needsAnd = checkAnd(sb, needsAnd);
+			sb.append(" ")
+					.append(params.getSearchVariants() != null ? JointForOpt.valueOf(params.getSearchVariants().get("finished")).resExist() : "exists")
+					.append(" (select 1 from assessmententry as aen")
+					.append(" where aen.identity.key = ident.key and aen.passed is true")
+					.append(" and aen.repositoryEntry.key in (:finished))");
 		}
 		
 		if(params.hasExcludedRoles()) {
@@ -318,7 +354,7 @@ public class IdentityPowerSearchQueriesImpl implements IdentityPowerSearchQuerie
 			needsAnd = checkAnd(sb, needsAnd);
 			sb.append(" ident.key in (select orgmember.identity.key from bgroupmember as orgmember ")
 			  .append("  inner join organisation as org on (org.group.key=orgmember.group.key)")
-			  .append("  where ");
+			  .append("  where orgmember.inheritanceModeString = 'none' and ");
 			sb.append("(");
 			for(int i=0; i<params.getOrganisationParents().size(); i++) {
 				if(i > 0) sb.append(" or ");
@@ -495,23 +531,46 @@ public class IdentityPowerSearchQueriesImpl implements IdentityPowerSearchQuerie
 		boolean needsUserPropertiesJoin = false;
 		
 		// treat login and userProperties as one element in this query
-		if (params.getLogin() != null && (params.getUserProperties() != null && !params.getUserProperties().isEmpty())) {
+		if ((params.getLogin() != null || (params.getOrgunit() != null && !StringUtils.isEmpty(params.getOrgunit())))
+				&& (params.getUserProperties() != null && !params.getUserProperties().isEmpty())) {
 			sb.append(" ( ");			
 		}
 		// append query for login
 		if (params.getLogin() != null) {
-			sb.append("(");
-			PersistenceHelper.appendFuzzyLike(sb, "ident.name", "login", dbInstance.getDbVendor());
-			sb.append(" or ");
-			PersistenceHelper.appendFuzzyLike(sb, "user.nickName", "login", dbInstance.getDbVendor());
-			sb.append(" or exists (select auth from ").append(AuthenticationImpl.class.getName()).append(" as auth")
-			  .append("  where ident.key=auth.identity.key and");
-			PersistenceHelper.appendFuzzyLike(sb, "auth.authusername", "login", dbInstance.getDbVendor());
-			sb.append("))");
+			if(params.getSearchVariants() == null) {
+				sb.append("(");
+				PersistenceHelper.appendFuzzyLike(sb, "ident.name", "login", dbInstance.getDbVendor());
+				sb.append(" or ");
+				PersistenceHelper.appendFuzzyLike(sb, "user.nickName", "login", dbInstance.getDbVendor());
+				sb.append(" or exists (select auth from ").append(AuthenticationImpl.class.getName()).append(" as auth")
+						.append("  where ident.key=auth.identity.key and");
+				PersistenceHelper.appendFuzzyLike(sb, "auth.authusername", "login", dbInstance.getDbVendor());
+				sb.append("))");
+			} else {
+				String joint = JointForOpt.valueOf(params.getSearchVariants().get("login")).resolve();
+				sb.append("(");
+				PersistenceHelper.appendFuzzyJoint(sb, "ident.name", "login", joint);
+				sb.append(" or ");
+				PersistenceHelper.appendFuzzyJoint(sb, "user.nickName", "login", joint);
+				sb.append(" or exists (select auth from ").append(AuthenticationImpl.class.getName()).append(" as auth")
+						.append("  where ident.key=auth.identity.key and");
+				PersistenceHelper.appendFuzzyJoint(sb, "auth.authusername", "login", joint);
+				sb.append("))");
+			}
 			
 			// if user fields follow a join element is needed
 			needsUserPropertiesJoin = true;
 			// at least one user field used, after this and is required
+			needsAnd = true;
+		}
+
+		// taratatata
+		if(params.getOrgunit() != null && !StringUtils.isEmpty(params.getOrgunit())) {
+			String joint = JointForOpt.valueOf(params.getSearchVariants().get("orgunit")).resolve();
+			PersistenceHelper.appendFuzzyJoint(sb, "user.orgUnit", "orgunit", joint);
+
+			needsUserPropertiesJoin = true;
+
 			needsAnd = true;
 		}
 
@@ -538,7 +597,11 @@ public class IdentityPowerSearchQueriesImpl implements IdentityPowerSearchQuerie
 				boolean needsOr = false;
 				for (String key : emailProperties.keySet()) {
 					if (needsOr) sb.append(" or ");
-					appendUserLike(sb, key, null);
+					if(params.getSearchVariants() == null) {
+						appendUserLike(sb, key, null);
+					} else {
+						appendUserLike(sb, key, null, params.getSearchVariants().get(key));
+					}
 					needsOr = true;
 				}
 				if (moreThanOne) sb.append(")");
@@ -551,22 +614,39 @@ public class IdentityPowerSearchQueriesImpl implements IdentityPowerSearchQuerie
 				String key = entry.getKey();
 				UserPropertyHandler handler = userPropertiesConfig.getPropertyHandler(key);
 				if(handler instanceof GenericSelectionPropertyHandler selectPropertyHandler && selectPropertyHandler.isMultiSelect()) {
+
+
+
 					List<String> valueList = splitMultipleValues(entry.getValue());
 					if(!valueList.isEmpty()) {
 						needsUserPropertiesJoin = checkIntersectionInUserProperties(sb, needsUserPropertiesJoin, params.isUserPropertiesAsIntersectionSearch());
-						
-						sb.append("(");
-						for(int i=0; i<valueList.size(); i++) {
-							if(i > 0) {
-								sb.append(" or ");
+
+						String searchVariant = params.getSearchVariants() != null ? params.getSearchVariants().get(key) : null;
+
+						if ("E".equalsIgnoreCase(searchVariant) || "NE".equalsIgnoreCase(searchVariant)) {
+							appendUserLike(sb, key, String.valueOf(0), searchVariant);
+						} else {
+							sb.append("(");
+							for (int i = 0; i < valueList.size(); i++) {
+								if (i > 0) {
+									sb.append(" or ");
+								}
+								if (searchVariant == null) {
+									appendUserLike(sb, key, String.valueOf(i));
+								} else {
+									appendUserLike(sb, key, String.valueOf(i), searchVariant);
+								}
 							}
-							appendUserLike(sb, key, String.valueOf(i));
+							sb.append(")");
 						}
-						sb.append(")");
 					}
 				} else {
 					needsUserPropertiesJoin = checkIntersectionInUserProperties(sb, needsUserPropertiesJoin, params.isUserPropertiesAsIntersectionSearch());
-					appendUserLike(sb, key, null);
+					if(params.getSearchVariants() == null) {
+						appendUserLike(sb, key, null);
+					} else {
+						appendUserLike(sb, key, null, params.getSearchVariants().get(key));
+					}
 				}
 				needsAnd = true;
 			}
@@ -576,7 +656,8 @@ public class IdentityPowerSearchQueriesImpl implements IdentityPowerSearchQuerie
 			needsAnd = true;
 		}
 		// end of user fields and login part
-		if (params.getLogin() != null && (params.getUserProperties() != null && !params.getUserProperties().isEmpty())) {
+		if ((params.getLogin() != null || (params.getOrgunit() != null && !StringUtils.isEmpty(params.getOrgunit())))
+				&& (params.getUserProperties() != null && !params.getUserProperties().isEmpty())) {
 			sb.append(" ) ");
 		}
 		return needsAnd;
@@ -587,6 +668,27 @@ public class IdentityPowerSearchQueriesImpl implements IdentityPowerSearchQuerie
 			sb.append(" user.").append(key).append(" like :").append(key).append("_value");
 		} else {
 			sb.append(" lower(user.").append(key).append(") like :").append(key).append("_value");
+		}
+		if(valueKey != null) {
+			sb.append("_").append(valueKey);
+		}
+		if(dbInstance.isOracle()) {
+			sb.append(" escape '\\'");
+		}
+		sb.append(" ");
+	}
+
+	private void appendUserLike(QueryBuilder sb, String key, String valueKey, String variant) {
+		if(dbInstance.isMySQL()) {
+			sb.append(" user.").append(key).append(" like :").append(key).append("_value");
+		} else {
+			String joint;
+			if(variant == null) {
+				joint = "like";
+			} else {
+				joint = JointForOpt.valueOf(variant).resolve();
+			}
+			sb.append(" lower(user.").append(key).append(") ").append(joint).append(" :").append(key).append("_value");
 		}
 		if(valueKey != null) {
 			sb.append("_").append(valueKey);
@@ -666,12 +768,23 @@ public class IdentityPowerSearchQueriesImpl implements IdentityPowerSearchQuerie
 				break;
 		}
 	}
-	
+
+	private JointForOpt getJoint(SearchIdentityParams params, String val) {
+		if(val != null && params.getSearchVariants() != null && params.getSearchVariants().containsKey(val))
+			return JointForOpt.valueOf(params.getSearchVariants().get(val));
+		return null;
+	}
+
 	private void fillParameters(SearchIdentityParams params, TypedQuery<?> dbq) {
 		// add user attributes
 		if (params.getLogin() != null) {
-			String login = makeFuzzyQueryString(params.getLogin());
+			String login = makeFuzzyDependent(params.getLogin(), getJoint(params, "login"));
 			dbq.setParameter("login", login.toLowerCase());
+		}
+
+		if(params.getOrgunit() != null && !StringUtils.isEmpty(params.getOrgunit())) {
+			String orgunit = makeFuzzyDependent(params.getOrgunit(), getJoint(params, "orgunit"));
+			dbq.setParameter("orgunit", orgunit.toLowerCase());
 		}
 		
 		if (params.getSearchString() != null) {
@@ -689,16 +802,22 @@ public class IdentityPowerSearchQueriesImpl implements IdentityPowerSearchQuerie
 				String key = entry.getKey();
 				String value = entry.getValue();
 				UserPropertyHandler handler = userPropertiesConfig.getPropertyHandler(key);
+				JointForOpt joint = getJoint(params, key);
 				if(handler instanceof GenericSelectionPropertyHandler selectPropertyHandler && selectPropertyHandler.isMultiSelect()) {
-					List<String> valueList = splitMultipleValues(value);
-					for(int i=valueList.size(); i-->0; ) {
-						String val = valueList.get(i) + GenericSelectionPropertyHandler.KEY_DELIMITER;
-						val = makeFuzzyQueryString(val);
-						val = "%" + val;
-						dbq.setParameter(entry.getKey() + "_value_" + i, val.toLowerCase());
+
+					if (joint == JointForOpt.E || joint == JointForOpt.NE) {
+						dbq.setParameter(entry.getKey() + "_value_" + 0, value.toLowerCase());
+					} else {
+						List<String> valueList = splitMultipleValues(value);
+						for (int i = valueList.size(); i-- > 0; ) {
+							String val = valueList.get(i) + GenericSelectionPropertyHandler.KEY_DELIMITER;
+							val = makeFuzzyQueryString(val);
+							val = "%" + val;
+							dbq.setParameter(entry.getKey() + "_value_" + i, val.toLowerCase());
+						}
 					}
 				} else {
-					value = makeFuzzyQueryString(value);
+					value = makeFuzzyDependent(value, joint);
 					dbq.setParameter(entry.getKey() + "_value", value.toLowerCase());
 				}
 			}
@@ -762,6 +881,21 @@ public class IdentityPowerSearchQueriesImpl implements IdentityPowerSearchQuerie
 					.stream().map(OrganisationRef::getKey).collect(Collectors.toList());
 			dbq.setParameter("organisationKey", organisationKeys);
 		}
+
+		if(params.getCourses() != null && !params.getCourses().isEmpty()) {
+			dbq.setParameter("courseKey", params.getCourses()
+					.stream().map(RepositoryEntry::getKey).collect(Collectors.toList()));
+		}
+
+		if(params.getCurriculums() != null && !params.getCurriculums().isEmpty()) {
+			dbq.setParameter("curKey", params.getCurriculums()
+					.stream().map(CurriculumElement::getKey).collect(Collectors.toList()));
+		}
+
+		if(params.getFinished() != null && !params.getFinished().isEmpty()) {
+			dbq.setParameter("finished", params.getFinished()
+					.stream().map(RepositoryEntry::getKey).collect(Collectors.toList()));
+		}
 		
 		// add date restrictions
 		if (params.getCreatedAfter() != null) {
@@ -803,6 +937,11 @@ public class IdentityPowerSearchQueriesImpl implements IdentityPowerSearchQuerie
 		if(params.getExternalId() != null) {
 			dbq.setParameter("externalId", params.getExternalId());
 		}
+	}
+
+	private String makeFuzzyDependent(String param, JointForOpt joint) {
+		if(JointForOpt.E.equals(joint) || JointForOpt.NE.equals(joint)) return param;
+		return makeFuzzyQueryString(param);
 	}
 	
 	private List<String> splitMultipleValues(String value) {

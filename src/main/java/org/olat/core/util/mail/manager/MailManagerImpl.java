@@ -1348,9 +1348,9 @@ public class MailManagerImpl implements MailManager, InitializingBean  {
 					toList.add(toAddress);
 				}
 			} else if (toId != null) {
-				Address toAddress = createAddress(toId, result, true);
+				List<Address> toAddress = createAddresses(toId, result, true);
 				if(toAddress != null) {
-					toList.add(toAddress);
+					toList.addAll(toAddress);
 				} 
 			}
 			
@@ -1518,6 +1518,40 @@ public class MailManagerImpl implements MailManager, InitializingBean  {
 						result.setReturnCode(MailerResult.RECIPIENT_ADDRESS_ERROR);
 					}
 				}
+			}
+		}
+		return null;
+	}
+
+	private List<Address> createAddresses(Identity recipient, MailerResult result, boolean error) {
+		if(recipient != null) {
+			if(recipient.getStatus() == Identity.STATUS_LOGIN_DENIED) {
+				result.addFailedIdentites(recipient);
+			} else {
+				String emailAddress = recipient.getUser().getProperty(UserConstants.EMAIL, null);
+				List<Address> addresses = new ArrayList<>();
+				if(!StringHelper.containsNonWhitespace(emailAddress)) return null;
+				String[] ads = emailAddress.split(";");
+				if(ads.length == 0) { ads = new String[1]; ads[0] = emailAddress; }
+				for(int i = 0; i < ads.length;i++) {
+					Address address;
+					try {
+						address = createAddress(ads[i]);
+						if(address == null) {
+							result.addFailedIdentites(recipient);
+							if(error) {
+								result.setReturnCode(MailerResult.RECIPIENT_ADDRESS_ERROR);
+							}
+						}
+						addresses.add(address);
+					} catch (AddressException e) {
+						result.addFailedIdentites(recipient);
+						if(error) {
+							result.setReturnCode(MailerResult.RECIPIENT_ADDRESS_ERROR);
+						}
+					}
+				}
+				return addresses;
 			}
 		}
 		return null;

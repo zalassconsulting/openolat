@@ -169,6 +169,11 @@ public class OrganisationImpl implements Persistable, Organisation {
 	}
 
 	@Override
+	public String getRecursiveDisplayName() {
+		return (getParent() != null ? getParent().getRecursiveDisplayName() + " » " : "") + getDisplayName();
+	}
+
+	@Override
 	public void setDisplayName(String displayName) {
 		this.displayName = displayName;
 	}

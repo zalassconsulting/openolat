@@ -24,9 +24,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
+import org.hibernate.Hibernate;
 import org.olat.basesecurity.IdentityPowerSearchQueries;
 import org.olat.basesecurity.SearchIdentityParams;
 import org.olat.basesecurity.model.IdentityPropertiesRow;
+import org.olat.basesecurity.model.OrganisationImpl;
 import org.olat.basesecurity.model.OrganisationRefImpl;
 import org.olat.core.CoreSpringFactory;
 import org.olat.core.commons.persistence.DefaultResultInfos;
@@ -38,6 +40,7 @@ import org.olat.core.gui.components.form.flexible.impl.elements.table.FlexiTable
 import org.olat.core.gui.components.form.flexible.impl.elements.table.filter.FlexiTablePeriodFilter;
 import org.olat.core.gui.components.form.flexible.impl.elements.table.filter.FlexiTablePeriodFilter.PeriodWithUnit;
 import org.olat.core.id.Identity;
+import org.olat.core.id.Organisation;
 import org.olat.core.id.OrganisationRef;
 import org.olat.core.util.StringHelper;
 import org.olat.user.propertyhandlers.UserPropertyHandler;
@@ -121,10 +124,22 @@ public class UserSearchDataSource implements FlexiTableDataSourceDelegate<Identi
 		}
 		
 		List<OrganisationRef> organisationsList = getOrganisationsFromFilter(filters);
+
 		if(organisationsList.isEmpty()) {
 			searchParams.setOrganisations(preselectedOrganisationsList);
 		} else {
 			searchParams.setOrganisations(organisationsList);
+		}
+
+		List<OrganisationRef> organisations = searchParams.getOrganisations();
+		List<Organisation> organisationsForParentsList = organisations != null ? organisations.stream()
+				.filter(o -> o instanceof Organisation)
+				.map(o -> (Organisation)o)
+				.toList() : Collections.emptyList();
+
+		if (!organisationsForParentsList.isEmpty()) {
+			searchParams.setOrganisations(Collections.emptyList());
+			searchParams.setOrganisationParents(organisationsForParentsList);
 		}
 
 		List<IdentityPropertiesRow> rows = searchQuery
@@ -142,6 +157,21 @@ public class UserSearchDataSource implements FlexiTableDataSourceDelegate<Identi
 			}
 		}
 		return false;
+	}
+
+	@Deprecated(forRemoval = true)
+	private List<OrganisationRef> getWithChildren(List<? extends OrganisationRef> organisations) {
+		List<OrganisationRef> result = new ArrayList<>();
+		for (OrganisationRef org : organisations) {
+			result.add(org);
+			if (org instanceof OrganisationImpl impl) {
+				List<? extends OrganisationRef> children = impl.getChildren();
+				if (children != null && !children.isEmpty()) {
+					result.addAll(impl.getChildren());
+				}
+			}
+		}
+		return result;
 	}
 	
 	private PeriodWithUnit getExpireIn(List<FlexiTableFilter> filters) {

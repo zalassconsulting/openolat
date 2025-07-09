@@ -212,6 +212,21 @@ public class CurriculumElementDAO {
 		return elements == null || elements.isEmpty() ? null : elements.get(0);
 	}
 
+	public CurriculumElement loadMe(String name, String oName) {
+		StringBuilder sb = new StringBuilder(128);
+		sb.append("select el from curriculumelement el")
+				.append(" inner join fetch el.curriculum curriculum")
+				.append(" inner join fetch el.group baseGroup")
+				.append(" where lower(el.displayName) = :name and lower(el.curriculum.organisation.displayName) = :oName");
+
+		List<CurriculumElement> elements = dbInstance.getCurrentEntityManager()
+				.createQuery(sb.toString(), CurriculumElement.class)
+				.setParameter("name", name)
+				.setParameter("oName", oName)
+				.getResultList();
+		return elements == null || elements.isEmpty() || elements.size() > 1 ? null : elements.get(0);
+	}
+
 	public List<CurriculumElement> loadByKeys(Collection<? extends CurriculumElementRef> elementRefs) {
 		if (elementRefs == null || elementRefs.isEmpty()) return new ArrayList<>(0);
 		

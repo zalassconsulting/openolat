@@ -27,6 +27,7 @@ package org.olat.admin.user;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.olat.basesecurity.BaseSecurity;
 import org.olat.basesecurity.BaseSecurityModule;
@@ -343,6 +344,14 @@ public class UsermanagerUserSearchController extends BasicController implements 
 		identityQueryParams = searchFormCtrl.getSearchIdentityParams();
 		if(identityQueryParams.getOrganisations() == null || identityQueryParams.getOrganisations().isEmpty()) {
 			identityQueryParams.setOrganisations(manageableOrganisations);
+		}
+
+		List<Organisation> orgsForParent = identityQueryParams.getOrganisations().stream()
+						.filter(org -> org instanceof Organisation)
+								.map(org -> (Organisation)org)
+				.toList();
+		if (!orgsForParent.isEmpty()) {
+			identityQueryParams.setOrganisationParents(orgsForParent);
 		}
 
 		removeAsListenerAndDispose(tableCtr);

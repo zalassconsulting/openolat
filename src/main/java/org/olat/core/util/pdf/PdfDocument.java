@@ -43,6 +43,7 @@ import org.apache.pdfbox.pdmodel.PDPageTree;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName;
 import org.apache.pdfbox.util.Matrix;
@@ -86,9 +87,17 @@ public class PdfDocument {
 		document = new PDDocument();
 		printDate = Formatter.getInstance(locale).formatDate(new Date());
 		
-		font = new PDType1Font(FontName.HELVETICA);
-		fontBold = new PDType1Font(FontName.HELVETICA_BOLD);
-	}
+//		font = new PDType1Font(FontName.HELVETICA);
+//		fontBold = new PDType1Font(FontName.HELVETICA_BOLD);
+
+        try {
+            font = PDType0Font.load(document, getClass().getResourceAsStream("/fonts/Roboto-Regular.ttf"));
+            fontBold = PDType0Font.load(document, getClass().getResourceAsStream("/fonts/Roboto-Bold.ttf"));
+        } catch (IOException e) {
+            throw new RuntimeException("Problem loading fonts", e);
+        }
+
+    }
 
 	public void close() throws IOException {
 		document.close();

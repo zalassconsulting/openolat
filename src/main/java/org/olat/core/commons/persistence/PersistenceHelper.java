@@ -149,6 +149,14 @@ public class PersistenceHelper {
 			log.error("", e);
 		}
 	}
+
+	public static final void appendFuzzyJoint(Appendable sb, String field, String key, String joint) {
+		try {
+			sb.append(" lower(").append(field).append(") ").append(joint).append(" :").append(key);
+		} catch (IOException e) {
+			log.error("", e);
+		}
+	}
 	
 	public static final void appendFuzzyNotLike(Appendable sb, String field, String key, String dbVendor) {
 		try {

@@ -344,7 +344,7 @@ public class UserRolesController extends FormBasicController {
 		rolesEl.addActionListener(FormEvent.ONCHANGE);
 
 		if (organisationModule.isEnabled()) {
-			rolesEl.setLabel("rightsForm.roles.for", new String[]{StringHelper.escapeHtml(organisation.getDisplayName())});
+			rolesEl.setLabel("rightsForm.roles.for", new String[]{StringHelper.escapeHtml(organisation.getRecursiveDisplayName())});
 		}
 
 		applySelectedRolesAndInheritance(rolesEl, members);

@@ -94,6 +94,15 @@ public class RepositoryEntryDAO {
 				.getResultList();
 	}
 
+	public List<RepositoryEntry> loadForMe(RepositoryEntryStatusEnum status) {
+		if(status == null) return new ArrayList<>(1);
+
+		return dbInstance.getCurrentEntityManager()
+				.createNamedQuery("loadThemForMe", RepositoryEntry.class)
+				.setParameter("repoStatus", status.name())
+				.getResultList();
+	}
+
 	public RepositoryEntry loadForUpdate(RepositoryEntry re) {
 		//first remove it from caches
 		dbInstance.getCurrentEntityManager().detach(re);

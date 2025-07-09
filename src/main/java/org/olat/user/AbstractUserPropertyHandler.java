@@ -53,6 +53,11 @@ public abstract class AbstractUserPropertyHandler implements UserPropertyHandler
 	private String group;
 	private String databaseColumnName;
 
+	public static final String[] selectOptsFull = {"Równa się", "Nie równa się", "Zawiera", "Nie zawiera"};
+	public static final String[] optsValuesFull = {"E", "NE", "C", "NC"};
+	public static final String[] selectOptsCnc = {"Zawiera", "Nie zawiera"};
+	public static final String[] optsValuesCnc = {"C", "NC"};
+
 	/**
 	 * @see org.olat.core.id.UserField#getUserFieldValue(org.olat.core.id.User, java.util.Locale)
 	 */

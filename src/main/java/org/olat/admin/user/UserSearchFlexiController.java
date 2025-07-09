@@ -19,13 +19,8 @@
  */
 package org.olat.admin.user;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.olat.basesecurity.BaseSecurity;
@@ -41,22 +36,19 @@ import org.olat.core.gui.UserRequest;
 import org.olat.core.gui.components.Component;
 import org.olat.core.gui.components.form.flexible.FormItem;
 import org.olat.core.gui.components.form.flexible.FormItemContainer;
-import org.olat.core.gui.components.form.flexible.elements.AutoCompleter;
-import org.olat.core.gui.components.form.flexible.elements.FlexiTableElement;
-import org.olat.core.gui.components.form.flexible.elements.FormLink;
-import org.olat.core.gui.components.form.flexible.elements.MultipleSelectionElement;
-import org.olat.core.gui.components.form.flexible.elements.SingleSelection;
-import org.olat.core.gui.components.form.flexible.elements.TextElement;
+import org.olat.core.gui.components.form.flexible.elements.*;
 import org.olat.core.gui.components.form.flexible.impl.Form;
 import org.olat.core.gui.components.form.flexible.impl.FormBasicController;
 import org.olat.core.gui.components.form.flexible.impl.FormEvent;
 import org.olat.core.gui.components.form.flexible.impl.FormLayoutContainer;
 import org.olat.core.gui.components.form.flexible.impl.elements.AutoCompleteFormEvent;
+import org.olat.core.gui.components.form.flexible.impl.elements.SingleSelectionImpl;
 import org.olat.core.gui.components.form.flexible.impl.elements.table.DefaultFlexiColumnModel;
 import org.olat.core.gui.components.form.flexible.impl.elements.table.FlexiTableColumnModel;
 import org.olat.core.gui.components.form.flexible.impl.elements.table.FlexiTableDataModelFactory;
 import org.olat.core.gui.components.form.flexible.impl.elements.table.SelectionEvent;
 import org.olat.core.gui.components.link.Link;
+import org.olat.core.gui.components.util.OrganisationUIFactory;
 import org.olat.core.gui.control.Controller;
 import org.olat.core.gui.control.Event;
 import org.olat.core.gui.control.WindowControl;
@@ -70,6 +62,12 @@ import org.olat.core.id.UserConstants;
 import org.olat.core.util.StringHelper;
 import org.olat.core.util.UserSession;
 import org.olat.core.util.Util;
+import org.olat.modules.curriculum.*;
+import org.olat.modules.curriculum.model.CurriculumSearchParameters;
+import org.olat.repository.RepositoryEntry;
+import org.olat.repository.RepositoryEntryStatusEnum;
+import org.olat.repository.manager.RepositoryEntryDAO;
+import org.olat.user.AbstractUserPropertyHandler;
 import org.olat.user.UserManager;
 import org.olat.user.propertyhandlers.EmailProperty;
 import org.olat.user.propertyhandlers.GenericSelectionPropertyHandler;
@@ -114,7 +112,12 @@ public class UserSearchFlexiController extends FormBasicController {
 	private FormLink selectUsersButton;
 	private TextElement loginEl;
 	private AutoCompleter completerEl;
-	private Map <String,FormItem>propFormItems;
+	private MultiSelectionFilterElement organisations;
+	private MultiSelectionFilterElement courses;
+	private MultiSelectionFilterElement finished;
+	private MultiSelectionFilterElement curriculas;
+	private Map <String,FormItem> propFormItems;
+	private Map<String, FormItem> searchVariantForItem;
 	private FlexiTableElement tableEl;
 	private UserSearchFlexiTableModel userTableModel;
 
@@ -123,6 +126,10 @@ public class UserSearchFlexiController extends FormBasicController {
 	private boolean multiSelection;
 	private boolean isAdministrativeUser;
 	private List<UserPropertyHandler> userSearchFormPropertyHandlers;
+	private List<Organisation> searchableOrganisations;
+	private List<RepositoryEntry> searchableCourses;
+	private List<CurriculumElement> curriculsy;
+	private TextElement fu;
 
 	private UserSearchProvider search;
 
@@ -136,6 +143,10 @@ public class UserSearchFlexiController extends FormBasicController {
 	private OrganisationService organisationService;
 	@Autowired
 	private IdentityPowerSearchQueries identitySearchQueries;
+	@Autowired
+	private RepositoryEntryDAO rDao;
+	@Autowired
+	private CurriculumService curriculumService;
 
 	public UserSearchFlexiController(UserRequest ureq, WindowControl wControl, Form rootForm) {
 		this(ureq, wControl, rootForm, null, null, true, false);
@@ -191,7 +202,7 @@ public class UserSearchFlexiController extends FormBasicController {
 		if(searchProvider != null) {
 			search = searchProvider;
 		} else {
-			List<Organisation> searchableOrganisations = organisationService.getOrganisations(getIdentity(), roles,
+			searchableOrganisations = organisationService.getOrganisations(getIdentity(), roles,
 					OrganisationRoles.valuesWithoutGuestAndInvitee());
 			search = new UserSearchQueries(searchableOrganisations, repositoryEntryRole, excludedRoles);
 		}
@@ -233,19 +244,93 @@ public class UserSearchFlexiController extends FormBasicController {
 			searchFormContainer.setFormTitle(translate("header.normal"));
 			layoutCont.add(searchFormContainer);
 			layoutCont.add("usersearchPanel", searchFormContainer);
-			
-			loginEl = uifactory.addTextElement("login", "search.form.login", 128, "", searchFormContainer);
+
+			propFormItems = new HashMap<>();
+			searchVariantForItem = new HashMap<>();
+
+			AtomicInteger lid = new AtomicInteger(1);
+			FormItemContainer pcl = uifactory.addHorizontalFormLayout(String.valueOf(lid.getAndIncrement()),"search.form.login", searchFormContainer);
+			FormItem sdl = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pcl, AbstractUserPropertyHandler.optsValuesFull, AbstractUserPropertyHandler.selectOptsFull);
+			sdl.setElementCssClass("col-sm-2");
+			loginEl = uifactory.addTextElement("login", "", 128, "", pcl);
 			loginEl.setVisible(isAdministrativeUser);
 			if(autofocus && loginEl.isVisible()) {
 				loginEl.setFocus(true);
 				autofocus = false;
 			}
 
-			propFormItems = new HashMap<>();
+			searchVariantForItem.put("login", sdl);
+
+			// dealer dropdown
+			FormItemContainer pco = uifactory.addHorizontalFormLayout(String.valueOf(lid.getAndIncrement()),"search.form.title.organisations", searchFormContainer);
+			pco.setElementCssClass("o_form_cell");
+			FormItem sdo = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pco, AbstractUserPropertyHandler.optsValuesCnc, AbstractUserPropertyHandler.selectOptsCnc);
+			sdo.setElementCssClass("col-sm-2");
+			organisations = uifactory.addCheckboxesFilterDropdown("organisations", "",
+					pco, getWindowControl(), OrganisationUIFactory.createSelectionValues(organisationService.getOrganisations(getIdentity(), roles,
+							OrganisationRoles.valuesWithoutGuestAndInvitee()), getLocale()));
+			organisations.setElementCssClass("col-sm-6");
+
+			//propFormItems.put(organisations.getName(), organisations);
+			searchVariantForItem.put(organisations.getName(), sdo);
+
+			// course participant dropdown
+			FormItemContainer pcp = uifactory.addHorizontalFormLayout(String.valueOf(lid.getAndIncrement()),"search.form.title.entrolled", searchFormContainer);
+			pcp.setElementCssClass("o_form_cell");
+			FormItem sdp = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pcp, AbstractUserPropertyHandler.optsValuesCnc, AbstractUserPropertyHandler.selectOptsCnc);
+			sdp.setElementCssClass("col-sm-2");
+			searchableCourses = rDao.loadForMe(RepositoryEntryStatusEnum.published);
+			courses = uifactory.addCheckboxesFilterDropdown("courses", "", pcp, getWindowControl(),
+					OrganisationUIFactory.createCoursesSelectionValues(searchableCourses));
+			courses.setElementCssClass("col-sm-6");
+
+			searchVariantForItem.put(courses.getName(), sdp);
+
+			// course finished dropdown
+			FormItemContainer pcf = uifactory.addHorizontalFormLayout(String.valueOf(lid.getAndIncrement()),"search.form.title.course.finished", searchFormContainer);
+			pcf.setElementCssClass("o_form_cell");
+			FormItem sdf = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pcf, AbstractUserPropertyHandler.optsValuesCnc, AbstractUserPropertyHandler.selectOptsCnc);
+			sdf.setElementCssClass("col-sm-2");
+			finished = uifactory.addCheckboxesFilterDropdown("finished", "", pcf, getWindowControl(),
+					OrganisationUIFactory.createCoursesSelectionValues(searchableCourses));
+			finished.setElementCssClass("col-sm-6");
+
+			searchVariantForItem.put(finished.getName(), sdf);
+
+			// ścieżki kariery dropdown
+			FormItemContainer pcs = uifactory.addHorizontalFormLayout(String.valueOf(lid.getAndIncrement()),"search.form.title.course.learnpath", searchFormContainer);
+			pcs.setElementCssClass("o_form_cell");
+			FormItem sds = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pcs, AbstractUserPropertyHandler.optsValuesCnc, AbstractUserPropertyHandler.selectOptsCnc);
+			sds.setElementCssClass("col-sm-2");
+			CurriculumSearchParameters params = new CurriculumSearchParameters();
+			Collection<? extends CurriculumRef> l = curriculumService.getCurriculums(params).stream().map(e -> (CurriculumRef) e).collect(Collectors.toList());
+			curriculsy = new ArrayList<>();
+			Map<String, Collection<CurriculumElement>> map = new HashMap<>();
+			l.forEach(r -> {
+				Collection<CurriculumElement> c = curriculumService.getCurriculumElements(r, new CurriculumElementStatus[]{CurriculumElementStatus.active});
+				curriculsy.addAll(c);
+				map.put(((Curriculum) r).getDisplayName(), c);
+			});
+			curriculas = uifactory.addCheckboxesFilterDropdown("learnpaths", "", pcs, getWindowControl(),
+					OrganisationUIFactory.createCurriculasValues(map));
+			curriculas.setElementCssClass("col-sm-6");
+
+			searchVariantForItem.put(curriculas.getName(), sds);
+
 			for (UserPropertyHandler userPropertyHandler : userSearchFormPropertyHandlers) {
 				if (userPropertyHandler == null) continue;
-				
-				FormItem fi = userPropertyHandler.addFormItem(getLocale(), null, UserSearchForm.class.getCanonicalName(), false, searchFormContainer);
+
+				FormItemContainer pc = uifactory.addHorizontalFormLayout(String.valueOf(lid.getAndIncrement()), userPropertyHandler.i18nFormElementLabelKey(), searchFormContainer);
+				pc.setElementCssClass("o_form_cell");
+				FormItem ssd;
+//				if(userPropertyHandler instanceof GenericSelectionPropertyHandler) {
+//					ssd = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pc, AbstractUserPropertyHandler.optsValuesCnc, AbstractUserPropertyHandler.selectOptsCnc);
+//				} else {
+					ssd = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pc, AbstractUserPropertyHandler.optsValuesFull, AbstractUserPropertyHandler.selectOptsFull);
+//				}
+				ssd.setElementCssClass("col-sm-2");
+				FormItem fi = userPropertyHandler.addFormItem(getLocale(), null, UserSearchForm.class.getCanonicalName(), false, pc);
+				fi.setLabel("search.form.title.empty", null);
 				if(autofocus && fi instanceof TextElement te) {
 					te.setFocus(true);
 					autofocus = false;
@@ -259,6 +344,7 @@ public class UserSearchFlexiController extends FormBasicController {
 				}
 
 				propFormItems.put(userPropertyHandler.getName(), fi);
+				searchVariantForItem.put(userPropertyHandler.getName(), ssd);
 			}
 			
 			FormLayoutContainer buttonGroupLayout = FormLayoutContainer.createButtonLayout("buttonGroupLayout", getTranslator());
@@ -302,6 +388,50 @@ public class UserSearchFlexiController extends FormBasicController {
 
 			layoutCont.put("userTable", tableEl.getComponent());
 		}
+	}
+
+	protected List<Organisation> getOrganisations() {
+		List<Organisation> selectedOrganisations = new ArrayList<>();
+		Collection<String> selectedKeys = organisations.getSelectedKeys();
+		for(Organisation organisation : searchableOrganisations) {
+			if(selectedKeys.contains(organisation.getKey().toString())) {
+				selectedOrganisations.add(organisation);
+			}
+		}
+		return selectedOrganisations;
+	}
+
+	protected List<RepositoryEntry> getCourses() {
+		List<RepositoryEntry> selectedCourses = new ArrayList<>();
+		Collection<String> selectedKeys = courses.getSelectedKeys();
+		for(RepositoryEntry course : searchableCourses) {
+			if(selectedKeys.contains(course.getKey().toString())) {
+				selectedCourses.add(course);
+			}
+		}
+		return selectedCourses;
+	}
+
+	protected List<RepositoryEntry> getFinished() {
+		List<RepositoryEntry> selectedCourses = new ArrayList<>();
+		Collection<String> selectedKeys = finished.getSelectedKeys();
+		for(RepositoryEntry course : searchableCourses) {
+			if(selectedKeys.contains(course.getKey().toString())) {
+				selectedCourses.add(course);
+			}
+		}
+		return selectedCourses;
+	}
+
+	protected List<CurriculumElement> getCur() {
+		List<CurriculumElement> selectedCurriculums = new ArrayList<>();
+		Collection<String> selectedKeys = curriculas.getSelectedKeys();
+		for(CurriculumElement c: curriculsy) {
+			if(selectedKeys.contains(c.getKey().toString())) {
+				selectedCurriculums.add(c);
+			}
+		}
+		return selectedCurriculums;
 	}
 
 	@Override
@@ -507,7 +637,12 @@ public class UserSearchFlexiController extends FormBasicController {
 	public void doSearch(UserRequest ureq) {
 		String login = loginEl.getValue();
 		Map<String, String> userPropertiesSearch = collectSearchProperties();
-		List<Identity> users = search.searchUsers(login, userPropertiesSearch, true);
+		List<Identity> users;
+		if(search instanceof RichUserSearchProvider) {
+			users = ((RichUserSearchProvider) search).searchUsers(login, userPropertiesSearch, collectSearchVariants(), true);
+		} else {
+			users = search.searchUsers(login, userPropertiesSearch, true);
+		}
 		
 		if(showTable) {
 			tableEl.setVisible(true);
@@ -542,7 +677,29 @@ public class UserSearchFlexiController extends FormBasicController {
 		return userPropertiesSearch;
 	}
 
-	private class UserSearchQueries extends UserSearchListProvider implements UserSearchProvider {
+	private Map<String, String> collectSearchVariants() {
+		Map<String, String> searchVariants = new HashMap<>();
+		for (UserPropertyHandler userPropertyHandler : userSearchFormPropertyHandlers) {
+			if (userPropertyHandler == null) continue;
+			FormItem varItem = searchVariantForItem.get(userPropertyHandler.getName());
+			String uiVariant = ((SingleSelection) varItem).getSelectedKey();
+			searchVariants.put(userPropertyHandler.getName(), uiVariant);
+		}
+		searchVariants.put("organisations",
+				((SingleSelection) searchVariantForItem.get("organisations")).getSelectedKey());
+		searchVariants.put("courses",
+				((SingleSelection) searchVariantForItem.get("courses")).getSelectedKey());
+		searchVariants.put("finished",
+				((SingleSelection) searchVariantForItem.get("finished")).getSelectedKey());
+		searchVariants.put("learnpaths",
+				((SingleSelection) searchVariantForItem.get("learnpaths")).getSelectedKey());
+/*		searchVariants.put("orgunit",
+				((SingleSelection) searchVariantForItem.get("orgunit")).getSelectedKey());*/
+
+		return searchVariants;
+	}
+
+	private class UserSearchQueries extends UserSearchListProvider implements RichUserSearchProvider {
 		
 		public UserSearchQueries(List<Organisation> searchableOrganisations, GroupRoles repositoryEntryRole,
 				OrganisationRoles[] excludedRoles) {
@@ -555,6 +712,21 @@ public class UserSearchFlexiController extends FormBasicController {
 		 * @param userPropertiesSearch
 		 * @return
 		 */
+		@Override
+		public List<Identity> searchUsers(String login, Map<String, String> userPropertiesSearch, Map<String, String> searchVariants, boolean userPropertiesAsIntersectionSearch) {
+			SearchIdentityParams params = new SearchIdentityParams(login,
+					userPropertiesSearch, searchVariants, userPropertiesAsIntersectionSearch, null, null,
+					null, null, null, null, null, Identity.STATUS_VISIBLE_LIMIT);
+			params.setOrganisationParents(getOrganisations());
+			params.setCourses(getCourses());
+			params.setFinished(getFinished());
+			params.setCurriculums(getCur());
+//			params.setOrgunit(fu.getValue());
+			//params.setRepositoryEntryRole(getRepositoryEntryRole(), false);
+			//params.setExcludedRoles(getExcludedRoles());
+			return identitySearchQueries.getIdentitiesByPowerSearch(params, 0, -1);
+		}
+
 		@Override
 		public List<Identity> searchUsers(String login, Map<String, String> userPropertiesSearch, boolean userPropertiesAsIntersectionSearch) {
 			SearchIdentityParams params = new SearchIdentityParams(login,
@@ -570,5 +742,10 @@ public class UserSearchFlexiController extends FormBasicController {
 	public interface UserSearchProvider extends ListProvider {
 		
 		public List<Identity> searchUsers(String login, Map<String, String> userPropertiesSearch, boolean userPropertiesAsIntersectionSearch);
+	}
+
+	public interface RichUserSearchProvider extends UserSearchProvider {
+
+		List<Identity> searchUsers(String login, Map<String, String> userPropertiesSearch, Map<String, String> variantSearch, boolean userPropertiesAsIntersectionSearch);
 	}
 }

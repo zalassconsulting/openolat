@@ -32,7 +32,10 @@ import org.olat.core.id.Identity;
 import org.olat.core.id.Organisation;
 import org.olat.core.id.OrganisationRef;
 import org.olat.core.util.StringHelper;
+import org.olat.modules.curriculum.Curriculum;
+import org.olat.modules.curriculum.CurriculumElement;
 import org.olat.modules.curriculum.CurriculumRoles;
+import org.olat.repository.RepositoryEntry;
 
 /**
  * 
@@ -44,6 +47,7 @@ public class SearchIdentityParams {
 	private String login;
 	private String searchString;
 	private Map<String, String> userProperties;
+	private Map<String, String> searchVariants;
 	private boolean userPropertiesAsIntersectionSearch;
 	
 	private OrganisationRoles[] roles;
@@ -73,6 +77,10 @@ public class SearchIdentityParams {
 	
 	private List<Organisation> organisationParents;
 	private List<OrganisationRef> organisations;
+	private List<RepositoryEntry> courses;
+	private List<RepositoryEntry> finished;
+	private List<CurriculumElement> curriculums;
+	private String orgunit;
 	
 	public SearchIdentityParams() {
 		//
@@ -97,6 +105,14 @@ public class SearchIdentityParams {
 		this.userLoginAfter = userLoginAfter;
 		this.userLoginBefore = userLoginBefore;
 		this.status = status;
+	}
+
+	public SearchIdentityParams(String login, Map<String, String> userproperties, Map<String, String> searchVariants, boolean userPropertiesAsIntersectionSearch,
+								OrganisationRoles[] roles, GroupMembershipInheritance[] roleInheritence, AuthProviders authProviders,
+								Date createdAfter, Date createdBefore, Date userLoginAfter, Date userLoginBefore, Integer status) {
+		this(login, userproperties, userPropertiesAsIntersectionSearch, roles, roleInheritence, authProviders,
+				createdAfter, createdBefore, userLoginAfter, userLoginBefore, status);
+		this.searchVariants = searchVariants;
 	}
 	
 	public static SearchIdentityParams created(Date createdAfter, Date createdBefore, Integer status) {
@@ -402,7 +418,43 @@ public class SearchIdentityParams {
 	public Collection<Long> getIdentityKeys() {
 		return identityKeys;
 	}
-	
+
+	public Map<String, String> getSearchVariants() {
+		return searchVariants;
+	}
+
+	public List<RepositoryEntry> getCourses() {
+		return courses;
+	}
+
+	public void setCourses(List<RepositoryEntry> courses) {
+		this.courses = courses;
+	}
+
+	public List<RepositoryEntry> getFinished() {
+		return finished;
+	}
+
+	public void setFinished(List<RepositoryEntry> finished) {
+		this.finished = finished;
+	}
+
+	public List<CurriculumElement> getCurriculums() {
+		return curriculums;
+	}
+
+	public void setCurriculums(List<CurriculumElement> curriculums) {
+		this.curriculums = curriculums;
+	}
+
+	public String getOrgunit() {
+		return orgunit;
+	}
+
+	public void setOrgunit(String orgunit) {
+		this.orgunit = orgunit;
+	}
+
 	public void setIdentityKeys(Collection<Long> identityKeys) {
 		this.identityKeys = identityKeys;
 	}

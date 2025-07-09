@@ -20,15 +20,14 @@
 package org.olat.core.gui.components.util;
 
 import java.text.Collator;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.olat.core.gui.components.util.SelectionValues.SelectionValue;
 import org.olat.core.id.Organisation;
+import org.olat.modules.curriculum.Curriculum;
+import org.olat.modules.curriculum.CurriculumElement;
+import org.olat.repository.RepositoryEntry;
 
 /**
  * 
@@ -37,19 +36,53 @@ import org.olat.core.id.Organisation;
  *
  */
 public class OrganisationUIFactory {
+
+	private static final String cName = "CourseModule";
 	
 	public static SelectionValues createSelectionValues(Collection<Organisation> organisations, Locale locale) {
 		Collator collator = Collator.getInstance(locale);
 		SelectionValues organisationSV = new SelectionValues();
-		
-		toOrganisationItems(organisations).stream()
+
+		Collection<Organisation> levelLimitedOrganizations = organisations.stream()
+						.filter(o -> o.getMaterializedPathKeys().replaceAll("[^/]+", "").length() <= 5)
+								.toList();
+
+		toOrganisationItems(levelLimitedOrganizations).stream()
 				.sorted((o1, o2) -> collator.compare(o1.getPathSort(), o2.getPathSort()))
 				.forEach(organisationItem -> organisationSV.add(new SelectionValue(
 						organisationItem.getOrganisation().getKey().toString(),
-						organisationItem.getPathDoted(),
+						organisationItem.getPathNames(),
 						organisationItem.getOrganisation().getDisplayName())));
 		
 		return organisationSV;
+	}
+
+	public static SelectionValues createCoursesSelectionValues(Collection<RepositoryEntry> entries) {
+		SelectionValues coursesSV = new SelectionValues();
+
+		entries.stream().filter(e -> cName.equals(e.getOlatResource().getResourceableTypeName()))
+				.sorted(Comparator.comparing(RepositoryEntry::getDisplayname))
+				.forEach(e -> coursesSV.add(new SelectionValue(
+						e.getKey().toString(),
+						e.getDisplayname(),
+						e.getDisplayname())));
+
+		return coursesSV;
+	}
+
+	public static SelectionValues createCurriculasValues(Map<String, Collection<CurriculumElement>> cursy) {
+		SelectionValues cursySV = new SelectionValues();
+		cursy.entrySet().stream().forEach(e -> {
+			String prf = e.getKey() + " / ";
+			e.getValue().stream()
+					.sorted(Comparator.comparing(CurriculumElement::getDisplayName))
+					.forEach(c -> cursySV.add(new SelectionValue(
+							c.getKey().toString(),
+							prf + c.getDisplayName(),
+							prf + c.getDisplayName()
+					)));
+		});
+		return cursySV;
 	}
 
 	public static List<OrganisationItem> toOrganisationItems(Collection<Organisation> organisations) {

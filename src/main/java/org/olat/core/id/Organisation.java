@@ -43,7 +43,9 @@ public interface Organisation extends CreateInfo, ModifiedInfo, OrganisationRef 
 	public void setIdentifier(String identifier);
 	
 	public String getDisplayName();
-	
+
+	String getRecursiveDisplayName();
+
 	public void setDisplayName(String displayName);
 	
 	public String getLocation();
