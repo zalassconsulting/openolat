@@ -19,6 +19,9 @@
  */
 package org.olat.modules.lecture.ui;
 
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -299,7 +302,7 @@ public class EditLectureBlockController extends FormBasicController {
 		dateEl.setElementCssClass("o_sel_repo_lecture_date");
 		dateEl.setEnabled(!readOnly && !lectureManagementManaged && !LectureBlockManagedFlag.isManaged(lectureBlock, LectureBlockManagedFlag.dates));
 		dateEl.setMandatory(true);
-		dateEl.setSameDay(true);
+		dateEl.setSameDay(false);
 		dateEl.setSecondDate(true);
 		dateEl.setDateChooserTimeEnabled(true);
 		dateEl.setValidDateCheck("form.error.date");
@@ -307,6 +310,9 @@ public class EditLectureBlockController extends FormBasicController {
 		int plannedNumOfLectures = lectureBlock == null ? lectureModule.getDefaultPlannedLectures() : lectureBlock.getPlannedLecturesNumber();
 		int maxNumOfLectures = Math.max(12, plannedNumOfLectures);
 		SelectionValues plannedLecturesKeys = new SelectionValues();
+
+		plannedLecturesKeys.add(SelectionValues.entry(Integer.toString(-1), "auto"));
+
 		for(int i=1; i<=maxNumOfLectures; i++) {
 			String num = String.valueOf(i);
 			plannedLecturesKeys.add(SelectionValues.entry(num, num));
@@ -315,7 +321,7 @@ public class EditLectureBlockController extends FormBasicController {
 				plannedLecturesKeys.keys(), plannedLecturesKeys.values(), null);
 		plannedLecturesEl.setMandatory(true);
 		String plannedlectures = lectureBlock == null
-				? Integer.toString(lectureModule.getDefaultPlannedLectures()) : Integer.toString(lectureBlock.getPlannedLecturesNumber());
+				? "-1" : Integer.toString(lectureBlock.getPlannedLecturesNumber());
 		for(String plannedLecturesKey:plannedLecturesKeys.keys()) {
 			if(plannedlectures.equals(plannedLecturesKey)) {
 				plannedLecturesEl.select(plannedLecturesKey, true);
@@ -323,13 +329,8 @@ public class EditLectureBlockController extends FormBasicController {
 			}
 		}
 		//freeze it after roll call done
-		boolean plannedLecturesEditable = (lectureBlock == null ||
-				(lectureBlock.getStatus() != LectureBlockStatus.done
-					&& lectureBlock.getRollCallStatus() != LectureRollCallStatus.closed
-					&& lectureBlock.getRollCallStatus() != LectureRollCallStatus.autoclosed))
-			&& !lectureManagementManaged
-			&& !LectureBlockManagedFlag.isManaged(lectureBlock, LectureBlockManagedFlag.plannedLectures);
-		plannedLecturesEl.setEnabled(!readOnly && plannedLecturesEditable);
+		// SMP: always freeze it
+		plannedLecturesEl.setEnabled(false);
 		
 		// Location
 		String location = lectureBlock == null ? "" : lectureBlock.getLocation();
@@ -698,7 +699,12 @@ public class EditLectureBlockController extends FormBasicController {
 		lectureBlock.setStartDate(dateEl.getDate());
 		lectureBlock.setEndDate(dateEl.getSecondDate());
 		
-		int plannedLectures = Integer.parseInt(plannedLecturesEl.getSelectedKey());
+		Period period = Period.between(
+			LocalDate.ofInstant(dateEl.getDate().toInstant(), ZoneId.systemDefault()),
+			LocalDate.ofInstant(dateEl.getSecondDate().toInstant(), ZoneId.systemDefault())
+		);
+		int plannedLectures = period.getDays() + 1;
+
 		lectureBlock.setPlannedLecturesNumber(plannedLectures);
 		
 		if(addLectureCtxt != null) {

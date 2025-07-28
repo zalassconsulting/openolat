@@ -1,0 +1,142 @@
+/* 
+	Add your custom content styles here to override styles from light/modules/_content.scss. 
+	Only used in iframes content 
+*/
+
+ /* OpenOLAT logo in navbar */
+.o_navbar-brand {
+	/* width - height */
+	background-image: url("images/suzuki_1.svg");
+	background-position: 8px;
+	background-size: 32px;
+	background-repeat: no-repeat;
+	height: 48px;
+	width: 48px;
+}
+
+/* Logo in member list print view */
+#o_print_brand .o_navbar-brand {
+	background-image: url("images/suzuki_1.svg");
+}
+.o_cmembers_print #o_print_brand {
+	width: 5cm;
+}
+/* Special logo on login screen, but only when enough space is available */
+#o_body.o_dmz {
+	.o_navbar-brand {
+		display: none;
+	}
+	.o_login .o_login_intro {
+		/* remove header, we have logo */
+		h1 {
+			display: none;
+		}
+	}
+	
+	.o_login_logo {
+		display: block;
+		background-image: url("images/Suzuki.svg");
+		background-repeat: no-repeat;
+		background-position: 80px 40px;
+		background-size: 300px;
+		width: 460px;
+		height: 110px;
+		margin-top: 0px;
+	}
+	
+	@media (max-width: $screen-xs-max) {
+		.o_login_logo {
+			background-size: 410px;
+			background-position: -40px -90px;
+		}
+	}
+
+	@media (min-width: $screen-xs-max) { 
+		#o_bg {
+			background-position: top left;
+			border-top: 0;
+			border-bottom: 0;
+		}
+		/* no border */
+		 #o_navbar_wrapper {
+			border: 0;
+		}
+			
+		.o_infomessage_wrapper {	
+			background: $o-login-bg-color;
+			border: $o-login-border;
+			border-radius: $o-login-border-radius;
+			padding: $o-login-border-radius;
+		}
+			
+		/* transparent with dark background -> white fonts */
+		#o_navbar_wrapper {
+			background: transparent;
+		}
+		.o_navbar-nav>li>a {
+		    background: rgba(255,255,255,0.5);
+		    color: #2d2926;
+		    border-radius: 5px;
+		    padding: 5px 10px;
+		    margin: 10px;
+    
+			&:hover {
+			    background: rgba(255,255,255,0.8);
+			}
+		}	
+		
+		#o_footer_wrapper {
+			background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.4) 40%, rgba(0, 0, 0, 0.8) 100%);
+			border: 0;
+			height: 100px;
+			padding-top: 30px;
+		}
+		#o_footer_container,
+		#o_footer_container a {
+			background: transparent;
+			color: #FFF;
+		}		
+		/* Social sharing icons in footer: weiss auf weiss... */
+		#o_share_social_container a {
+			color: $link-color;
+			&:hover {
+				color: darken($link-color, 10%);
+			}
+		}	
+	}
+	
+	/* make message on login screen appear on right side when there is enough space */
+	@media (min-width: 1290px) { 
+		.o_login {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: space-between;
+			.o_login_intro {
+				order: 1;
+				flex-basis: 100%;
+			}
+			.o_login_box_wrapper {
+				order: 2;
+				display: inline-block;
+			}
+			.o_login_messages {
+				order: 3;
+				.o_infomessage_wrapper {
+					margin-top: 0;
+				}
+			}
+			.o_login_footer_wrapper {
+				order: 4;
+				flex-basis: 100%;
+			}
+		}
+	}
+	
+}
+#o_footer_wrapper {
+	border-top: 1px solid #e6e6e6;
+}
+
+.o_filter_search_list_values {
+	max-height: 200px;
+}

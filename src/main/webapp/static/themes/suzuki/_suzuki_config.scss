@@ -1,0 +1,96 @@
+/* OpenOLAT colors */
+$o-brand-chocolate				: rgb(52,44,36);
+$o-brand-sprout					: rgb(178,207,66);
+$o-brand-forest					: rgb(17,98,79);
+$o-brand-sea					: #126365; // 11ay optimized version of rgb(32,157,158);
+$o-brand-peach					: rgb(242,175,64);
+$o-brand-berry					: rgb(143,31,64);
+
+$o-brand-red					: rgb(214,0,28);
+$o-brand-green					: rgb(120,190,32);
+$o-brand-yellow					: rgb(254,219,0);
+$o-brand-grey					: rgb(166,166,166);
+$o-brand-black					: rgb(45,41,38);
+$o-brand-suzuki                 : #0b2533;
+$o-brand-suzuki-secondary       : #5794cf;
+
+
+/* General colors */
+$brand-primary 					: $o-brand-suzuki;
+$text-color						: $o-brand-black;
+$link-color						: $o-brand-suzuki;
+$link-hover-color				: darken($o-brand-suzuki, 10%);
+$o-content-link-color			: $link-color;
+$o-content-link-hover-color		: $link-hover-color;
+$o-content-link-decoration		: underline;
+
+$headings-color					: $o-brand-chocolate;
+$o-content-header-base-color	: $headings-color;
+$o-content-fieldset-legend-color: $headings-color;
+$o-dialog-header-color			: $headings-color;
+$jumbotron-heading-color		: $headings-color;
+$o-login-header-color			: $headings-color;
+$o-coursesite-meta-title-color	: $headings-color;
+
+$o-bookmark-color				: $o-brand-berry;
+$o-button-dirty-color			: $text-color;
+$o-button-dirty-bg				: $o-brand-peach;
+
+/* Login screen */
+$o-login-form-align				: left;
+$o-login-form-bg-img			: "images/1.jpg";
+$o-login-form-bg-gradient-steps	: rgba(255,255,255,0) 0.2%, rgba(255,255,255,0.3) 60%, rgba(255,255,255,0.5) 100%;
+$o-login-border-radius			: 20px;
+$o-login-bg-color				: rgba(255,255,255,0.92);
+$o-login-box-shadow				: none;
+
+/* Login screen background image copyrights: 
+infinite.jpg
+Pixaby License by https://pixabay.com/photos/away-avenue-trees-nature-infinite-2414983/
+
+christian.jpg
+marco.jpg
+holger.jpg
+openolat_award.jpg
+CC by frentix GmbH http://www.frentix.com 
+*/
+
+
+$o-login-btn-register-color		: $text-color;
+$o-login-btn-register-bg		: $o-brand-sprout;
+$o-login-btn-register-border	: $o-brand-sprout; 
+
+/* Course site start button */
+$o-coursesite-start-bg			: $o-brand-suzuki;
+$o-coursesite-book-bg			: $o-brand-suzuki;
+$o-coursesite-details-bg		: $o-brand-suzuki-secondary;
+
+/* Font family */
+$font-family-base				: "SuzukiPro", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+$headings-font-family			: "SuzukiHeadline", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;;
+/*
+$font-size-base					: 14px;
+*/
+
+/* Inverted navbar 
+$o-navbar-color						: #777 ;
+$o-navbar-bg						: #222 ;
+$o-navbar-border-color				: darken($o-navbar-bg, 10%) ;
+$o-navbar-link-color				: #777 ;
+$o-navbar-link-hover-color			: #fff ;
+$o-navbar-link-hover-bg 			: transparent ;
+$o-navbar-link-active-color 		: $o-navbar-link-hover-color ;
+$o-navbar-link-active-bg 			: darken($o-navbar-bg, 10%) ;
+$o-navbar-link-disabled-color 		: #444 ;
+$o-navbar-link-disabled-bg 			: transparent ;
+$o-navbar-tools-permanent-color		: #777;
+*/
+
+/* Inverted footer 
+$o-footer-outer-bg 					: $o-navbar-bg;
+$o-footer-inner-bg 					: $o-navbar-bg;
+$o-footer-default-color 			: $o-navbar-link-color;
+$o-footer-default-link-color 		: $o-navbar-link-color;
+$o-footer-default-link-hover-color 	: $o-navbar-link-hover-color;
+*/
+

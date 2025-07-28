@@ -1,0 +1,13 @@
+@charset "UTF-8";
+
+/* Add client fonts */
+@import "fonts/fonts";
+
+/* Use OpenOLAT configuration to override defaults */
+@import "suzuki_config";
+
+/* Add all default config and apply styles from light theme */
+@import "light/content";
+
+/* Override with OpenOLAT customizations */
+@import "suzuki_content";
