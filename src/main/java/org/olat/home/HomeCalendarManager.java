@@ -258,7 +258,7 @@ public class HomeCalendarManager implements PersonalCalendarManager, UserDataDel
 							courseCalendarWrapper.setAccess(KalendarRenderWrapper.ACCESS_READ_ONLY);
 						}
 						
-						if(role != null && (GroupRoles.owner.name().equals(role) || GroupRoles.coach.name().equals(role) || GroupRoles.participant.name().equals(role))) {
+						if((GroupRoles.owner.name().equals(role) || GroupRoles.coach.name().equals(role) || GroupRoles.participant.name().equals(role))) {
 							courseCalendarWrapper.setPrivateEventsVisible(true);
 						}
 
@@ -275,7 +275,7 @@ public class HomeCalendarManager implements PersonalCalendarManager, UserDataDel
 					log.error("Corrupted course: {} :: {}", olatResource.getResourceableTypeName(), courseResourceableID);
 				} catch (Exception e) {
 					OLATResource olatResource = courseEntry.getOlatResource();
-					log.error("Cannor read calendar of course: {} :: {}", olatResource.getResourceableTypeName(), courseResourceableID);
+					log.error("Cannot read calendar of course: {} :: {}", olatResource.getResourceableTypeName(), courseResourceableID);
 				}
 			}
 		}

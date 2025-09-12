@@ -372,6 +372,8 @@ public interface CalendarManager {
 
 	public List<KalendarEvent> getEvents(Kalendar calendar, ZonedDateTime from, ZonedDateTime to, boolean privateEventsVisible);
 
+    public List<KalendarEvent> getEvents(Identity identity, Kalendar calendar, ZonedDateTime from, ZonedDateTime to, boolean privateEventsVisible);
+
 	/**
 	 * Return the last date (until) of a recurrence rule.
 	 * 

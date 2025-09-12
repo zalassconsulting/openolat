@@ -38,9 +38,12 @@ import org.olat.core.CoreSpringFactory;
 import org.olat.core.dispatcher.mapper.Mapper;
 import org.olat.core.gui.media.JSONMediaResource;
 import org.olat.core.gui.media.MediaResource;
+import org.olat.core.id.Identity;
 import org.olat.core.logging.Tracing;
 import org.olat.core.util.DateUtils;
 import org.olat.core.util.StringHelper;
+import org.olat.core.util.UserSession;
+import org.olat.core.util.session.UserSessionManager;
 
 /**
  * 
@@ -100,8 +103,12 @@ public class FullCalendarMapper implements Mapper {
 			} else if(StringHelper.containsNonWhitespace(end)) {
 				endDate = parseDate(end);
 			}
-			
-			collectKalendarEvents(ja, calendarId, startDate, endDate);
+
+            UserSessionManager userSessionManager = CoreSpringFactory.getImpl(UserSessionManager.class);
+            UserSession usess = userSessionManager != null ? userSessionManager.getUserSession(request) : null;
+            Identity callerIdentity = usess != null ? usess.getIdentityEnvironment().getIdentity() : null;
+
+			collectKalendarEvents(callerIdentity, ja, calendarId, startDate, endDate);
 			return new JSONMediaResource(ja, "UTF-8");
 		} catch (JSONException e) {
 			log.error("", e);
@@ -122,11 +129,11 @@ public class FullCalendarMapper implements Mapper {
 		return calendarId;
 	}
 	
-	private void collectKalendarEvents(JSONArray ja, String calendarId, ZonedDateTime from, ZonedDateTime to) throws JSONException {
+	private void collectKalendarEvents(Identity identity, JSONArray ja, String calendarId, ZonedDateTime from, ZonedDateTime to) throws JSONException {
 		KalendarRenderWrapper cal =  fcC.getCalendar(calendarId);
 		if(cal != null) {
 			boolean privateEventsVisible = cal.isPrivateEventsVisible();
-			List<KalendarEvent> events = calendarManager.getEvents(cal.getKalendar(), from, to, privateEventsVisible);
+			List<KalendarEvent> events = calendarManager.getEvents(identity, cal.getKalendar(), from, to, privateEventsVisible);
 
 			for(KalendarEvent event:events) {
 				if(!privateEventsVisible && event.getClassification() == KalendarEvent.CLASS_PRIVATE) {

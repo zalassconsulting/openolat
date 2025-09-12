@@ -90,7 +90,7 @@ public class BusinessGroupQueries {
 		appendMarkedSubQuery(sm, params);
 		sm.append(" from businessgrouptosearch as bgi ")
 		  .append(" inner join fetch bgi.resource as bgResource ")
-		  .append(" inner join bgi.baseGroup as bGroup ");
+		  .append(" inner join fetch bgi.baseGroup as bGroup ");
 		LifecycleParams lifecycleParams = new LifecycleParams();
 		filterBusinessGroupToSearch(sm, params, lifecycleParams, true);
 
@@ -153,7 +153,7 @@ public class BusinessGroupQueries {
 		  .append(" ) as marks")
 		  .append(" from businessgrouptosearch as bgi")
 		  .append(" inner join fetch bgi.resource as bgResource ")
-		  .append(" inner join bgi.baseGroup as bGroup ");
+		  .append(" inner join fetch bgi.baseGroup as bGroup ");
 		LifecycleParams lifecycleParams = new LifecycleParams();
 		filterBusinessGroupToSearch(sb, params, lifecycleParams, false);
 
@@ -204,7 +204,7 @@ public class BusinessGroupQueries {
 		  .append(" ) as numOfParticipantReservations")
 		  .append(" from businessgrouptosearch as bgi")
 		  .append(" inner join fetch bgi.resource as bgResource ")
-		  .append(" inner join bgi.baseGroup as bGroup ");
+		  .append(" inner join fetch bgi.baseGroup as bGroup ");
 		LifecycleParams lifecycleParams = new LifecycleParams();
 		filterBusinessGroupToSearch(sb, params, lifecycleParams, false);
 		sb.append(" order by bgi.name");
@@ -258,7 +258,7 @@ public class BusinessGroupQueries {
 		  .append(" ) as numOfParticipantReservations")
 		  .append(" from businessgrouptosearch as bgi")
 		  .append(" inner join fetch bgi.resource as bgResource ")
-		  .append(" inner join bgi.baseGroup as bGroup ");
+		  .append(" inner join fetch bgi.baseGroup as bGroup ");
 		if(params.getRepositoryEntry() == null) {
 			params.setRepositoryEntry(entry);//make sur the restricition is applied
 		}

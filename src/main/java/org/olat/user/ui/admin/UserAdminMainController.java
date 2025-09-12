@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.olat.admin.user.SmpCustomReportController;
 import org.olat.admin.user.UserAdminController;
 import org.olat.admin.user.UserCreateController;
 import org.olat.admin.user.UsermanagerUserSearchController;
@@ -117,8 +118,9 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public class UserAdminMainController extends MainLayoutBasicController implements Activateable2 {
 	public static final String EXTENSIONPOINT_MENU_MENUQUERIES = UserAdminMainController.class.getName() + ".menu.menuqueries";
-	
-	private Link createLink;
+    public static final String SMP_CUSTOMREPORTS = "smp.customreports";
+
+    private Link createLink;
 	private Link importLink;
 	private Link userLifecycleLink;
 	private Link createTempUsersLink;
@@ -430,6 +432,8 @@ public class UserAdminMainController extends MainLayoutBasicController implement
 			case "globalrolesoutsidedefault":
 				List<Identity> globalRoleOutliers = organisationService.getGlobalRolesOutsideDefaultIdentities();
 				return new UsermanagerUserSearchController(ureq, bwControl, content, globalRoleOutliers, true, true, false);
+            case SMP_CUSTOMREPORTS:
+                return new SmpCustomReportController(ureq, bwControl);
 			default: return null;		
 		}
 	}
@@ -767,6 +771,7 @@ public class UserAdminMainController extends MainLayoutBasicController implement
 		appendNode("menu.created.sixmonth", "menu.created.sixmonth.alt", "created.sixmonth", "o_sel_useradmin_createdsixmonth", queriesNode);
 		appendNode("menu.created.newUsersNotification", "menu.created.newUsersNotification.alt", "created.newUsersNotification", "o_sel_useradmin_creatednewusers", queriesNode);
 		appendNode("menu.global.roles.outside.default", "menu.global.roles.outside.default.alt", "globalrolesoutsidedefault", "o_sel_useradmin_globalrolesoutsidedefault", queriesNode);
+		appendNode("menu.smp.customreports", "menu.smp.customreports.alt", SMP_CUSTOMREPORTS, "o_sel_useradmin-smp-customreports", queriesNode);
 	}
 
 	/**
