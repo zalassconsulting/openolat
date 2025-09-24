@@ -19,6 +19,7 @@
  */
 package org.olat.modules.reminder.ui;
 
+import org.jetbrains.annotations.NotNull;
 import org.olat.core.gui.UserRequest;
 import org.olat.core.gui.components.form.flexible.FormItem;
 import org.olat.core.gui.components.form.flexible.FormItemContainer;
@@ -84,7 +85,7 @@ public class RepositoryEntryLifecycleAfterValidRuleEditor extends RuleEditorFrag
 		if (value != null && value.startsWith("-")) {
 			value = value.substring(1);
 		}
-		valueEl = uifactory.addTextElement("launchvalue".concat(id), null, 128, value, ruleCont);
+		valueEl = uifactory.addTextElement(getTextElementPrefix().concat(id), null, 128, value, ruleCont);
 		valueEl.setDomReplacementWrapperRequired(false);
 		valueEl.setDisplaySize(3);
 		
@@ -93,7 +94,7 @@ public class RepositoryEntryLifecycleAfterValidRuleEditor extends RuleEditorFrag
 				trans.translate(LaunchUnit.month.name()), trans.translate(LaunchUnit.year.name())
 		};
 		
-		unitEl = uifactory.addDropdownSingleselect("launchunit".concat(id), null, ruleCont, unitKeys, unitValues, null);
+		unitEl = uifactory.addDropdownSingleselect(getDropdownPrefix().concat(id), null, ruleCont, unitKeys, unitValues, null);
 		unitEl.setDomReplacementWrapperRequired(false);
 		boolean unitSelected = false;
 		if(currentUnit != null) {
@@ -123,7 +124,15 @@ public class RepositoryEntryLifecycleAfterValidRuleEditor extends RuleEditorFrag
 		return ruleCont;
 	}
 
-	@Override
+    protected String getTextElementPrefix() {
+        return "launchvalue";
+    }
+
+    protected String getDropdownPrefix() {
+        return "launchunit";
+    }
+
+    @Override
 	public boolean validateFormLogic(UserRequest ureq) {
 		boolean allOk = true;
 		

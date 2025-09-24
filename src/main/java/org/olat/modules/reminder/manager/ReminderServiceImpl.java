@@ -59,12 +59,7 @@ import org.olat.modules.reminder.Reminder;
 import org.olat.modules.reminder.ReminderRule;
 import org.olat.modules.reminder.ReminderService;
 import org.olat.modules.reminder.SentReminder;
-import org.olat.modules.reminder.model.ImportExportReminder;
-import org.olat.modules.reminder.model.ImportExportReminders;
-import org.olat.modules.reminder.model.ReminderImpl;
-import org.olat.modules.reminder.model.ReminderInfos;
-import org.olat.modules.reminder.model.ReminderRuleImpl;
-import org.olat.modules.reminder.model.ReminderRules;
+import org.olat.modules.reminder.model.*;
 import org.olat.modules.reminder.rule.DateRuleSPI;
 import org.olat.modules.reminder.ui.ReminderAdminController;
 import org.olat.repository.RepositoryEntry;
@@ -303,6 +298,9 @@ public class ReminderServiceImpl implements ReminderService {
 					sendReminderCopies(reminder, bundle, template, copyOwners, copyAddresses);
 				}
 			}
+            if (identityToRemind instanceof ReminderIdentity reminderIdentity) {
+                identityToRemind = reminderIdentity.unwrap();
+            }
 			reminderDao.markAsSend(reminder, identityToRemind, status, run);
 		}
 		

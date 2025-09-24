@@ -28,16 +28,7 @@ import org.olat.course.nodes.st.assessment.STAssessmentConfig;
 import org.olat.course.reminder.AssessmentReminderProvider;
 import org.olat.course.reminder.CourseNodeReminderProvider;
 import org.olat.course.reminder.rule.LearningProgressRuleSPI;
-import org.olat.modules.reminder.rule.BeforeDateRuleSPI;
-import org.olat.modules.reminder.rule.BusinessGroupRoleRuleSPI;
-import org.olat.modules.reminder.rule.CourseEnrollmentDateRuleSPI;
-import org.olat.modules.reminder.rule.DateRuleSPI;
-import org.olat.modules.reminder.rule.InitialCourseLaunchRuleSPI;
-import org.olat.modules.reminder.rule.RecentCourseLaunchRuleSPI;
-import org.olat.modules.reminder.rule.RepositoryEntryLifecycleAfterValidFromRuleSPI;
-import org.olat.modules.reminder.rule.RepositoryEntryLifecycleAfterValidToRuleSPI;
-import org.olat.modules.reminder.rule.RepositoryEntryRoleRuleSPI;
-import org.olat.modules.reminder.rule.UserPropertyRuleSPI;
+import org.olat.modules.reminder.rule.*;
 import org.olat.repository.RepositoryEntryRef;
 
 /**
@@ -82,6 +73,7 @@ public class STReminderProvider implements CourseNodeReminderProvider {
 			mainTypes.add(LearningProgressRuleSPI.class.getSimpleName());
 			mainTypes.add(BusinessGroupRoleRuleSPI.class.getSimpleName());
 			mainTypes.add(RepositoryEntryRoleRuleSPI.class.getSimpleName());
+            mainTypes.add(CourseEventReminderRuleSPI.class.getSimpleName());
 			mainTypes.add(RepositoryEntryLifecycleAfterValidFromRuleSPI.class.getSimpleName());
 			mainTypes.add(RepositoryEntryLifecycleAfterValidToRuleSPI.class.getSimpleName());
 		}

@@ -245,7 +245,7 @@ public class ReminderImpl implements Reminder, Persistable {
 		this.entry = entry;
 	}
 
-	@Override
+    @Override
 	public int hashCode() {
 		return key == null ? -239575484 : key.hashCode();
 	}
