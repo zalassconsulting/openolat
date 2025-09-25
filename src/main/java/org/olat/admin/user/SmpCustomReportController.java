@@ -2,11 +2,13 @@ package org.olat.admin.user;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.olat.basesecurity.BaseSecurity;
+import org.olat.basesecurity.manager.OrganisationDAO;
 import org.olat.core.gui.UserRequest;
 import org.olat.core.gui.components.form.flexible.FormItem;
 import org.olat.core.gui.components.form.flexible.FormItemContainer;
 import org.olat.core.gui.components.form.flexible.elements.DateChooser;
 import org.olat.core.gui.components.form.flexible.elements.FormLink;
+import org.olat.core.gui.components.form.flexible.elements.SingleSelection;
 import org.olat.core.gui.components.form.flexible.impl.FormBasicController;
 import org.olat.core.gui.components.form.flexible.impl.FormEvent;
 import org.olat.core.gui.components.link.Link;
@@ -35,6 +37,7 @@ public class SmpCustomReportController extends FormBasicController {
     private FormLink rsaButton;
     private FormLink apButton;
     private DateChooser dateChooser;
+    private SingleSelection contextSelection;
 
 
     private final String targetEmail;
@@ -44,6 +47,11 @@ public class SmpCustomReportController extends FormBasicController {
     @Autowired
     private BaseSecurity securityManager;
 
+    @Autowired
+    private OrganisationDAO organisationDAO;
+
+    private final List<Organisation> contextOrganisations = new ArrayList<>();
+
     public SmpCustomReportController(UserRequest ureq, WindowControl wControl) {
         super(ureq, wControl);
         targetEmail = ureq.getIdentity().getUser().getEmail();
@@ -52,6 +60,8 @@ public class SmpCustomReportController extends FormBasicController {
 
     @Override
     protected void initForm(FormItemContainer formLayout, Controller listener, UserRequest ureq) {
+
+        contextOrganisations.addAll(organisationDAO.loadByType("CTX"));
 
         uifactory.addStaticTextElement(translate("menu.smp.label"), targetEmail, formLayout);
 
@@ -66,11 +76,17 @@ public class SmpCustomReportController extends FormBasicController {
         dateChooser.set2DigitsYearFormat(false);
         dateChooser.setSecondDate(endDate);
 
+        String[] contextKeys = contextOrganisations.stream().map(Organisation::getKey).map(String::valueOf).toArray(String[]::new);
+        String[] contextValues = contextOrganisations.stream().map(Organisation::getDisplayName).toArray(String[]::new);
+
+        contextSelection = uifactory.addDropdownSingleselect("menu.smp.context", formLayout, contextKeys, contextValues);
+
         rsaButton = uifactory.addFormLink(translate("menu.smp.button.rsa"), formLayout, Link.BUTTON);
         rsaButton.addActionListener(FormEvent.ONCLICK);
 
         apButton = uifactory.addFormLink(translate("menu.smp.button.ap"), formLayout, Link.BUTTON);
         apButton.addActionListener(FormEvent.ONCLICK);
+
 
 
     }
@@ -122,6 +138,7 @@ public class SmpCustomReportController extends FormBasicController {
                     .addParameter("email", targetEmail)
                     .addParameter("from", "" + dateChooser.getDate().getTime())
                     .addParameter("to", "" + dateChooser.getSecondDate().getTime())
+                    .addParameter("ctx", contextSelection.getSelectedKey())
                     .build();
 
             logInfo("Invoking report URI: " + uri);

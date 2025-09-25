@@ -794,5 +794,11 @@ public class OrganisationDAO {
 		}).collect(Collectors.toList());
 	}
 
+    public List<Organisation> loadByType(String typeCode) {
+        return dbInstance.getCurrentEntityManager()
+                .createNamedQuery("loadOrganisationByTypeCode", Organisation.class)
+                .setParameter("typeCode", typeCode)
+                .getResultList();
+    }
 
 }

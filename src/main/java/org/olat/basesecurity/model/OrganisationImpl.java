@@ -63,6 +63,7 @@ import org.olat.core.util.StringHelper;
 		 left join fetch org.type orgType
 		 left join fetch org.parent parentOrg
 		 where org.key in :keys""")
+@NamedQuery(name="loadOrganisationByTypeCode", query="select org from organisation org where org.type.identifier = :typeCode")
 public class OrganisationImpl implements Persistable, Organisation {
 
 	private static final long serialVersionUID = 3062294568262911860L;
