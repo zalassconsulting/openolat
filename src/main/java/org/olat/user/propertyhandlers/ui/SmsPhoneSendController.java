@@ -36,8 +36,6 @@ import org.olat.core.util.StringHelper;
 import org.olat.core.util.Util;
 import org.olat.user.UserManager;
 import org.olat.user.propertyhandlers.UserPropertyHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -48,7 +46,6 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public class SmsPhoneSendController extends FormBasicController {
 
-	private static final Logger log = LoggerFactory.getLogger(SmsPhoneSendController.class);
 	private TextElement newPhoneEl;
 	
 	private final String sentToken;
@@ -117,7 +114,6 @@ public class SmsPhoneSendController extends FormBasicController {
 			String phone = newPhoneEl.getValue();
 			
 			Identity recipient = securityManager.findIdentityByUser(userToChange);
-			log.info("MY_IGNIS msg: {} phone: {} recipient: {}", msg,phone,recipient);
 			messageService.sendMessage(msg, phone, recipient);
 			fireEvent(ureq, Event.DONE_EVENT);
 		} catch (SimpleMessageException e) {

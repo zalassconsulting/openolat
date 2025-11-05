@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.Logger;
 import org.olat.basesecurity.GroupRoles;
+import org.olat.basesecurity.manager.IdentityToIdentityRelationDAO;
 import org.olat.core.commons.services.sms.SimpleMessageException;
 import org.olat.core.commons.services.sms.SimpleMessageService;
 import org.olat.core.gui.translator.Translator;
@@ -99,6 +100,8 @@ public class ReminderServiceImpl implements ReminderService {
     private RepositoryEntryLifecycleDAO lifecycleDao;
     @Autowired
     private SimpleMessageService messageService;
+    @Autowired
+    private IdentityToIdentityRelationDAO identityToIdentityRelationDAO;
 
     @Override
     public Reminder createReminder(RepositoryEntry entry, Identity creator) {
@@ -252,13 +255,16 @@ public class ReminderServiceImpl implements ReminderService {
 
     @Override
     public void sendSms(Reminder reminder, Identity identity) {
-        try {
-            log.info("MY_IGNIS identityToRemind - content: {}, phone, {}, identity {}", reminder.getSmsContent(), identity.getUser().getSmsTelMobile(),identity);
-//            messageService.sendMessage(reminder.getSmsContent(), identity.getUser().getSmsTelMobile(), identity);
-            messageService.sendMessage(reminder.getSmsContent(), "0048698790533", identity);
-        } catch (SimpleMessageException e) {
-            throw new RuntimeException(e);
-        }
+        log.info("MY_IGNIS identityToRemind - content: {}, phone, {}, identity {}", reminder.getSmsContent(), identity.getUser().getSmsTelMobile(), identity);
+//        if (reminder.getSmsContent() != null && identity.getUser().getSmsTelMobile() != null) {
+            try {
+                messageService.sendMessage(reminder.getSmsContent(), "0048698790533", identity);
+//          messageService.sendMessage(reminder.getSmsContent(), identity.getUser().getSmsTelMobile(), identity);
+            } catch (SimpleMessageException e) {
+                throw new RuntimeException(e);
+            }
+//        }
+
     }
 
     @Override
