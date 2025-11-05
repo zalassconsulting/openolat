@@ -48,6 +48,7 @@ public class ReminderVO {
 	private String description;
 	private String emailSubject;
 	private String emailBody;
+	private String smsContent;
 	
 	private List<ReminderRuleVO> rules = new ArrayList<>();
 	
@@ -58,6 +59,7 @@ public class ReminderVO {
 		vo.setDescription(reminder.getDescription());
 		vo.setEmailSubject(reminder.getEmailSubject());
 		vo.setEmailBody(reminder.getEmailBody());
+		vo.setSmsContent(reminder.getSmsContent());
 		
 		String configuration = reminder.getConfiguration();
 		if(StringHelper.containsNonWhitespace(configuration)) {
@@ -111,6 +113,14 @@ public class ReminderVO {
 
 	public void setEmailBody(String emailBody) {
 		this.emailBody = emailBody;
+	}
+
+	public String getSmsContent() {
+		return smsContent;
+	}
+
+	public void setSmsContent(String smsContent) {
+		this.smsContent = smsContent;
 	}
 
 	public List<ReminderRuleVO> getRules() {

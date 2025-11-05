@@ -26,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 import org.olat.core.CoreSpringFactory;
 import org.olat.core.commons.services.scheduler.JobWithDB;
 import org.olat.core.logging.Tracing;
+import org.olat.core.util.mail.MailerResult;
 import org.olat.modules.reminder.Reminder;
 import org.olat.modules.reminder.ReminderModule;
 import org.olat.modules.reminder.ReminderService;
@@ -63,6 +64,17 @@ public class ReminderJob extends JobWithDB implements InterruptableJob {
 					break;
 				}
 				reminderService.sendReminder(reminder, false);
+//				MailerResult mailerResult = reminderService.sendReminder(reminder, false);
+//
+//				if(mailerResult.isSuccessful()) {
+//					reminderService.sendSms(reminder);
+//				} else {
+//					log.warn("Reminder could not be sent to some identities: "
+//							+ mailerResult.getFailedIdentites()
+//							+ ", invalid addresses: "
+//							+ mailerResult.getInvalidAddresses()
+//							+ ", error: " + mailerResult.getErrorMessage());
+//				}
 			}
 			log.info("Reminders sent");
 		}

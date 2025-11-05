@@ -22,11 +22,7 @@ package org.olat.course.reminder.ui;
 import org.olat.core.gui.UserRequest;
 import org.olat.core.gui.components.form.flexible.impl.Form;
 import org.olat.core.gui.control.WindowControl;
-import org.olat.core.gui.control.generic.wizard.BasicStep;
-import org.olat.core.gui.control.generic.wizard.PrevNextFinishConfig;
-import org.olat.core.gui.control.generic.wizard.Step;
-import org.olat.core.gui.control.generic.wizard.StepFormController;
-import org.olat.core.gui.control.generic.wizard.StepsRunContext;
+import org.olat.core.gui.control.generic.wizard.*;
 
 /**
  * 
@@ -34,23 +30,23 @@ import org.olat.core.gui.control.generic.wizard.StepsRunContext;
  * @author uhensler, urs.hensler@frentix.com, http://www.frentix.com
  *
  */
-public class EmailEditStep extends BasicStep {
+public class SmsEditStep extends BasicStep {
 
-	public EmailEditStep(UserRequest ureq) {
+	public SmsEditStep(UserRequest ureq) {
 		super(ureq);
-		setI18nTitleAndDescr("edit.email", null);
-		setNextStep(new SmsEditStep(ureq));
+		setI18nTitleAndDescr("edit.sms", null);
+		setNextStep(Step.NOSTEP);
 	}
 
 	@Override
 	public PrevNextFinishConfig getInitialPrevNextFinishConfig() {
-		return PrevNextFinishConfig.BACK_NEXT_FINISH;
+		return PrevNextFinishConfig.BACK_FINISH;
 	}
 
 	@Override
 	public StepFormController getStepController(UserRequest ureq, WindowControl wControl,
 			StepsRunContext stepsRunContext, Form form) {
-		return new EMailEditController(ureq, wControl, form, stepsRunContext);
+		return new SmsEditController(ureq, wControl, form, stepsRunContext);
 	}
 
 }

@@ -121,4 +121,5 @@ public interface ReminderService {
 	 */
 	public List<Reminder> importRawReminders(Identity creator, RepositoryEntry newEntry, File fExportedDataDir);
 
+	void sendSms(Reminder reminder, Identity identity);
 }
