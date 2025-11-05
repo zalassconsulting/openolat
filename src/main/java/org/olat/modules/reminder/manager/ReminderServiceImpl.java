@@ -244,7 +244,6 @@ public class ReminderServiceImpl implements ReminderService {
         return ruleEngine.evaluate(reminder, true);
     }
 
-    //tutaj gdzieś dopiąć smsy dla jednego?
     @Override
     public MailerResult sendReminder(Reminder reminder, boolean resend) {
         List<Identity> identitiesToRemind = ruleEngine.evaluate(reminder, resend);
@@ -262,7 +261,6 @@ public class ReminderServiceImpl implements ReminderService {
         }
     }
 
-    //tutaj gdzieś dopiąć smsy dla wielu?
     @Override
     public MailerResult sendReminder(Reminder reminder, List<Identity> identitiesToRemind) {
         RepositoryEntry entry = reminder.getEntry();
