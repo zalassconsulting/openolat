@@ -8,10 +8,13 @@ import org.olat.core.gui.components.form.flexible.FormItem;
 import org.olat.core.gui.components.form.flexible.FormItemContainer;
 import org.olat.core.gui.components.form.flexible.elements.DateChooser;
 import org.olat.core.gui.components.form.flexible.elements.FormLink;
+import org.olat.core.gui.components.form.flexible.elements.MultipleSelectionElement;
 import org.olat.core.gui.components.form.flexible.elements.SingleSelection;
 import org.olat.core.gui.components.form.flexible.impl.FormBasicController;
 import org.olat.core.gui.components.form.flexible.impl.FormEvent;
+import org.olat.core.gui.components.form.flexible.impl.FormLayoutContainer;
 import org.olat.core.gui.components.link.Link;
+import org.olat.core.gui.components.panel.EmptyPanelItem;
 import org.olat.core.gui.control.Controller;
 import org.olat.core.gui.control.Event;
 import org.olat.core.gui.control.WindowControl;
@@ -36,6 +39,10 @@ public class SmpCustomReportController extends FormBasicController {
 
     private FormLink rsaButton;
     private FormLink apButton;
+    MultipleSelectionElement apPositionSelector;
+    private FormLink incomeButton;
+    private FormLink dealerBudgetButton;
+    private FormLink trainerReportButton;
     private DateChooser dateChooser;
     private SingleSelection contextSelection;
 
@@ -80,32 +87,54 @@ public class SmpCustomReportController extends FormBasicController {
         String[] contextValues = contextOrganisations.stream().map(Organisation::getDisplayName).toArray(String[]::new);
 
         contextSelection = uifactory.addDropdownSingleselect("menu.smp.context", formLayout, contextKeys, contextValues);
+        FormLayoutContainer emptyPanel = uifactory.addHorizontalFormLayout("menu.smp.button.ap", translate("menu.smp.button.ap"), formLayout);
+
+        apButton = uifactory.addFormLink(translate("menu.smp.button.ap"), emptyPanel, Link.BUTTON);
+        apPositionSelector = uifactory.addCheckboxesHorizontal("menu.smp.button.ap.allpositions", null, emptyPanel, new String[]{"alllpositions"}, new String[]{translate("menu.smp.button.ap.allpositions")});
+        apButton.addActionListener(FormEvent.ONCLICK);
 
         rsaButton = uifactory.addFormLink(translate("menu.smp.button.rsa"), formLayout, Link.BUTTON);
         rsaButton.addActionListener(FormEvent.ONCLICK);
 
-        apButton = uifactory.addFormLink(translate("menu.smp.button.ap"), formLayout, Link.BUTTON);
-        apButton.addActionListener(FormEvent.ONCLICK);
+        incomeButton = uifactory.addFormLink(translate("menu.smp.button.income"), formLayout, Link.BUTTON);
+        incomeButton.addActionListener(FormEvent.ONCLICK);
 
+
+        dealerBudgetButton = uifactory.addFormLink(translate("menu.smp.button.dealerbudget"), formLayout, Link.BUTTON);
+        dealerBudgetButton.addActionListener(FormEvent.ONCLICK);
+
+        trainerReportButton = uifactory.addFormLink(translate("menu.smp.button.trainerreport"), formLayout, Link.BUTTON);
+        trainerReportButton.addActionListener(FormEvent.ONCLICK);
 
 
     }
 
     @Override
     protected void formInnerEvent(UserRequest ureq, FormItem source, FormEvent event) {
+
+        Date from = dateChooser.getDate();
+        Date to = dateChooser.getSecondDate();
+
         if (rsaButton == source) {
             // launch the RSA report
             requestSendingReport(ReportType.RSA);
             fireEvent(ureq, Event.DONE_EVENT);
         } else if (apButton == source) {
             // launch the AP report
-
-            Date from = dateChooser.getDate();
-            Date to = dateChooser.getSecondDate();
-
             logInfo("Sending action plan to " + targetEmail + " for dates " + from + " to " + to);
-
-            requestSendingReport(ReportType.AP);
+            requestSendingReport(ReportType.AP, apPositionSelector.isSelected(0));
+            fireEvent(ureq, Event.DONE_EVENT);
+        } else if (incomeButton == source) {
+            logInfo("Sending income report to " + targetEmail + " for dates " + from + " to " + to);
+            requestSendingReport(ReportType.INCOME);
+            fireEvent(ureq, Event.DONE_EVENT);
+        } else if (dealerBudgetButton == source) {
+            logInfo("Sending dealer budget report to " + targetEmail + " for dates " + from + " to " + to);
+            requestSendingReport(ReportType.DEALER_BUDGET);
+            fireEvent(ureq, Event.DONE_EVENT);
+        } else if (trainerReportButton == source) {
+            logInfo("Sending trainer report to " + targetEmail + " for dates " + from + " to " + to);
+            requestSendingReport(ReportType.TRAINERS);
             fireEvent(ureq, Event.DONE_EVENT);
         }
         super.formInnerEvent(ureq, source, event);
@@ -118,7 +147,10 @@ public class SmpCustomReportController extends FormBasicController {
 
     private enum ReportType {
         RSA("rsa-monthly/excel"),
-        AP("action-plan/excel");
+        AP("action-plan/excel"),
+        INCOME("income/excel"),
+        DEALER_BUDGET("dealer-budget/excel"),
+        TRAINERS("trainers/excel");
 
         private final String path;
 
@@ -132,14 +164,27 @@ public class SmpCustomReportController extends FormBasicController {
     }
 
     private void requestSendingReport(ReportType reportType) {
+        requestSendingReport(reportType, false);
+    }
+
+
+        private void requestSendingReport(ReportType reportType, boolean... featureFlags) {
 
         try {
-            URI uri = new URIBuilder().setScheme("http").setHost("localhost").setPort(8080).setPath(reportType.getPath())
+            URIBuilder uriBuilder = new URIBuilder().setScheme("http").setHost("localhost").setPort(8080).setPath(reportType.getPath())
                     .addParameter("email", targetEmail)
                     .addParameter("from", "" + dateChooser.getDate().getTime())
                     .addParameter("to", "" + dateChooser.getSecondDate().getTime())
-                    .addParameter("ctx", contextSelection.getSelectedKey())
-                    .build();
+                    .addParameter("ctx", contextSelection.getSelectedKey());
+
+            if (featureFlags != null) {
+                for (int i=0; i < featureFlags.length; i++) {
+                    uriBuilder.addParameter("ff" + i, featureFlags[i] ? "true" : "false");
+                }
+            }
+
+            URI uri = uriBuilder.build();
+
 
             logInfo("Invoking report URI: " + uri);
 
@@ -151,10 +196,10 @@ public class SmpCustomReportController extends FormBasicController {
                             request, HttpResponse.BodyHandlers.discarding()
                     ).thenApply(HttpResponse::statusCode)
                     .thenAccept(statusCode -> {
-                        if (statusCode == HttpURLConnection.HTTP_OK) {
-                            logInfo("Action plan successfully sent to " + targetEmail);
+                        if (statusCode == HttpURLConnection.HTTP_NO_CONTENT) {
+                            logInfo("Report successfully sent to " + targetEmail);
                         } else {
-                            logWarn("Action plan could not be sent to " + targetEmail, null);
+                            logWarn("Report could not be sent to " + targetEmail + ", status code: " + statusCode, null);
                         }
                     });
         } catch (URISyntaxException e) {

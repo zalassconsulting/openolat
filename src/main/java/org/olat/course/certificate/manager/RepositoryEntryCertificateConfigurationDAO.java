@@ -45,11 +45,12 @@ public class RepositoryEntryCertificateConfigurationDAO {
 	@Autowired
 	private DB dbInstance;
 	
-	public RepositoryEntryCertificateConfiguration createConfiguration(RepositoryEntry entry) {
+	public RepositoryEntryCertificateConfiguration createConfiguration(RepositoryEntry entry, CertificateTemplate template) {
 		RepositoryEntryCertificateConfigurationImpl config = new RepositoryEntryCertificateConfigurationImpl();
 		config.setCreationDate(new Date());
 		config.setLastModified(config.getCreationDate());
 		config.setEntry(entry);
+        config.setTemplate(template);
 		dbInstance.getCurrentEntityManager().persist(config);
 		return config;
 	}

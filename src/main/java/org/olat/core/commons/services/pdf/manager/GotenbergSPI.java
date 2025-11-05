@@ -116,6 +116,7 @@ public class GotenbergSPI extends AbstractPdfSPI {
 			MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create()
 					.addTextBody("url", url)
 					.addTextBody("preferCssPageSize", "true")
+					.addTextBody("printBackground", "true")
 					.addTextBody("paperWidth", "8.27")
 					.addTextBody("paperHeight", "11.7");
 			

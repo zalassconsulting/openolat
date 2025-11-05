@@ -347,7 +347,8 @@ public class CertificatesManagerImpl implements CertificatesManager, MessageList
 	
 	@Override
 	public RepositoryEntryCertificateConfiguration createConfiguration(RepositoryEntry entry) {
-		return certificateConfigurationDao.createConfiguration(entry);
+        List<CertificateTemplate> customTemplates = getTemplates();
+        return certificateConfigurationDao.createConfiguration(entry, customTemplates == null || customTemplates.isEmpty() ? null : customTemplates.iterator().next());
 	}
 	
 	@Override
@@ -357,7 +358,8 @@ public class CertificatesManagerImpl implements CertificatesManager, MessageList
 			RepositoryEntry reloadedEntry = repositoryEntryDao.loadForUpdate(entry);
 			config = certificateConfigurationDao.getConfiguration(entry);
 			if(config == null) {
-				config = certificateConfigurationDao.createConfiguration(reloadedEntry);
+                List<CertificateTemplate> customTemplates = getTemplates();
+                config = certificateConfigurationDao.createConfiguration(reloadedEntry, customTemplates == null || customTemplates.isEmpty() ? null : customTemplates.iterator().next());
 			}
 			dbInstance.commit();
 		}

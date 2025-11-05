@@ -200,7 +200,7 @@ public class CourseReminderTemplate extends MailTemplate {
             LectureBlock lectureBlock = reminderIdentity.getReminderProperty(ReminderIdentity.LECTURE_BLOCK_PROPERTY_KEY, LectureBlock.class);
             if (lectureBlock != null) {
                 putVariablesInMailContext(LECTURE_BLOCK_TITLE, lectureBlock.getTitle());
-                putVariablesInMailContext(LECTURE_BLOCK_START_DATE, formatter.formatDate(lectureBlock.getStartDate()));
+                putVariablesInMailContext(LECTURE_BLOCK_START_DATE, formatter.formatDateAndTime(lectureBlock.getStartDate()));
                 putVariablesInMailContext(LECTURE_BLOCK_LOCATION, lectureBlock.getLocation());
             }
         }

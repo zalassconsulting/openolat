@@ -90,9 +90,13 @@ public class InvoiceAccessHandler implements AccessMethodHandler {
 	
 	@Override
 	public AccessMethodSecurityCallback getSecurityCallback(OLATResource resource, Identity identity, Roles roles) {
+        return new DefaultACSecurityCallback(roles);
+
+        /*
 		return ORES_TYPE_CURRICULUM_ELEMENT.equals(resource.getResourceableTypeName())
 				? new DefaultACSecurityCallback(roles)
 				: NotAvailableACSecurityCallback.get();
+*/
 	}
 
 	@Override

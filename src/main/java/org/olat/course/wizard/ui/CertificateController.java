@@ -20,6 +20,7 @@
 package org.olat.course.wizard.ui;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.olat.core.gui.UserRequest;
 import org.olat.core.gui.components.form.flexible.FormItem;
@@ -40,6 +41,7 @@ import org.olat.core.gui.control.generic.wizard.StepsEvent;
 import org.olat.core.gui.control.generic.wizard.StepsRunContext;
 import org.olat.core.util.Util;
 import org.olat.course.certificate.CertificateTemplate;
+import org.olat.course.certificate.CertificatesManager;
 import org.olat.course.certificate.PDFCertificatesOptions;
 import org.olat.course.certificate.ui.CertificateChooserController;
 import org.olat.course.certificate.ui.CertificatesOptionsController;
@@ -47,6 +49,7 @@ import org.olat.course.wizard.CertificateDefaults;
 import org.olat.course.wizard.CourseWizardService;
 import org.olat.repository.RepositoryEntry;
 import org.olat.repository.RepositoryEntryManagedFlag;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * 
@@ -73,6 +76,9 @@ public class CertificateController extends StepFormBasicController {
 	private final RepositoryEntry entry;
 	private final CertificateDefaults context;
 
+    @Autowired
+    private CertificatesManager certificatesManager;
+
 	private static final String[] pdfCertificatesOptionsKeys = new String[] {
 		PDFCertificatesOptions.auto.name(),
 		PDFCertificatesOptions.manual.name()
@@ -84,8 +90,15 @@ public class CertificateController extends StepFormBasicController {
 		setTranslator(Util.createPackageTranslator(CertificatesOptionsController.class, getLocale(), getTranslator()));
 		this.entry = entry;
 		context = (CertificateDefaults)getOrCreateFromRunContext(RUN_CONTEXT_KEY, CertificateDefaults::new);
-		
-		initForm(ureq);
+
+        if (certificatesManager != null) {
+            List<CertificateTemplate> templates = certificatesManager.getTemplates();
+            if (templates != null && !templates.isEmpty()) {
+                context.setTemplate(templates.get(0));
+            }
+        }
+
+        initForm(ureq);
 		updateUI(ureq, false);
 	}
 

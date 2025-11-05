@@ -80,15 +80,17 @@ public class CertificateChooserController extends UploadCertificateTemplateContr
 		List<CertificateTemplate> templates = certificatesManager.getTemplates();
 		templatesKeys = new String[templates.size() + 1];
 		templatesValues = new String[templates.size() + 1];
-		templatesKeys[0] = "def";
-		templatesValues[0] = "Default";
-		
-		int count = 1;
+
+		int count = 0;
 		for(CertificateTemplate template:templates) {
 			templatesKeys[count] = template.getKey().toString();
 			templatesValues[count++] = template.getName();
 		}
-		publicTemplatesEl = uifactory.addDropdownSingleselect("public.templates", formLayout, templatesKeys, templatesValues, null);
+
+        templatesKeys[count] = "def";
+        templatesValues[count] = "Default";
+
+        publicTemplatesEl = uifactory.addDropdownSingleselect("public.templates", formLayout, templatesKeys, templatesValues, null);
 		
 		FormLayoutContainer selectButtonCont = FormLayoutContainer.createButtonLayout("selectButton", getTranslator());
 		selectButtonCont.setRootForm(mainForm);
