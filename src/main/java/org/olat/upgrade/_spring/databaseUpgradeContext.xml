@@ -200,8 +200,8 @@
                     <constructor-arg index="0" value="OLAT_20.0.5_smp0.1" />
                     <property name="alterDbStatements" value="smp_upgrade_20_0_x_to_0_1.sql" />
                 </bean>
-				<bean id="database_upgrade_smp_20_0_x_to_0_3" class="org.olat.upgrade.DatabaseUpgrade">
-					<constructor-arg index="0" value="OLAT_20.0.5_smp0.1" />
+				<bean id="database_upgrade_smp_20_0_x_to_0_2" class="org.olat.upgrade.DatabaseUpgrade">
+					<constructor-arg index="0" value="OLAT_20.0.5_smp0.2" />
 					<property name="alterDbStatements" value="smp_upgrade_20_0_x_to_0_2.sql" />
 				</bean>
 			</list>
