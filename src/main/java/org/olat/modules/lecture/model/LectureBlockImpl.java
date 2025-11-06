@@ -19,6 +19,7 @@
  */
 package org.olat.modules.lecture.model;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -158,8 +159,16 @@ public class LectureBlockImpl implements Persistable, LectureBlock {
 	@OneToOne(targetEntity=TeamsMeetingImpl.class, fetch=FetchType.LAZY, optional=true)
 	@JoinColumn(name="fk_teams", nullable=true, insertable=true, updatable=true)
 	private TeamsMeeting teamsMeeting;
-	
-	
+
+    @Column(name="smp_trainer_cost")
+    private Integer smpTrainerCost;
+
+    @Column(name="smp_venue_cost")
+    private Integer smpVenueCost;
+
+    @Column(name="smp_aux_cost")
+    private Integer smpAuxiliaryCost;
+
 	@Override
 	public Long getKey() {
 		return key;
@@ -480,7 +489,37 @@ public class LectureBlockImpl implements Persistable, LectureBlock {
 		this.teamsMeeting = teamsMeeting;
 	}
 
-	@Override
+    @Override
+    public Integer getSmpTrainerCost() {
+        return smpTrainerCost;
+    }
+
+    @Override
+    public void setSmpTrainerCost(Integer smpTrainerCost) {
+        this.smpTrainerCost = smpTrainerCost;
+    }
+
+    @Override
+    public Integer getSmpVenueCost() {
+        return smpVenueCost;
+    }
+
+    @Override
+    public void setSmpVenueCost(Integer smpVenueCost) {
+        this.smpVenueCost = smpVenueCost;
+    }
+
+    @Override
+    public Integer getSmpAuxiliaryCost() {
+        return smpAuxiliaryCost;
+    }
+
+    @Override
+    public void setSmpAuxiliaryCost(Integer smpAuxiliaryCost) {
+        this.smpAuxiliaryCost = smpAuxiliaryCost;
+    }
+
+    @Override
 	public int hashCode() {
 		return getKey() == null ? 8963587 : getKey().hashCode();
 	}

@@ -535,3 +535,15 @@
 	padding-left: 0;
 }
 
+.o_lecture_costs >.col-sm-12 {
+    padding-right: 0;
+    padding-left: 0;
+}
+
+.o_lecture_costs >.col-sm-12 >.col-sm-4:first-child {
+  padding-left: 0;
+}
+
+.o_lecture_costs >.col-sm-12 >.col-sm-4:last-child {
+  padding-right: 0;
+}

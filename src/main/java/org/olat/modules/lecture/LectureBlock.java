@@ -20,6 +20,7 @@
  */
 package org.olat.modules.lecture;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Set;
 
@@ -143,4 +144,13 @@ public interface LectureBlock extends LectureBlockRef, ModifiedInfo, CreateInfo,
 	public TeamsMeeting getTeamsMeeting();
 	
 	public void setTeamsMeeting(TeamsMeeting meeting);
+
+    Integer getSmpTrainerCost();
+    void setSmpTrainerCost(Integer smpTrainerCost);
+
+    Integer getSmpVenueCost();
+    void setSmpVenueCost(Integer smpVenueCost);
+
+    Integer getSmpAuxiliaryCost();
+    void setSmpAuxiliaryCost(Integer smpAuxiliaryCost);
 }
