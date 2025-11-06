@@ -42,6 +42,7 @@ public class ImportExportReminder implements Serializable {
 	private String emailCopyStr;
 	private String customEmailCopy;
 	private String smsContent;
+	private boolean smsEnabled;
 	
 	public ImportExportReminder() {
 		//
@@ -56,6 +57,7 @@ public class ImportExportReminder implements Serializable {
 		emailCopyStr = EmailCopy.join(reminder.getEmailCopy());
 		customEmailCopy = reminder.getCustomEmailCopy();
 		smsContent = reminder.getSmsContent();
+		smsEnabled = reminder.getSmsEnabled();
 	}
 	
 	public String getDescription() {
@@ -96,6 +98,14 @@ public class ImportExportReminder implements Serializable {
 
 	public void setSmsContent(String smsContent) {
 		this.smsContent = smsContent;
+	}
+
+	public boolean isSmsEnabled() {
+		return smsEnabled;
+	}
+
+	public void setSmsEnabled(boolean smsEnabled) {
+		this.smsEnabled = smsEnabled;
 	}
 
 	public boolean isEmailCopyOnly() {

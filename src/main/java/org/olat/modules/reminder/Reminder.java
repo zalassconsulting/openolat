@@ -59,7 +59,11 @@ public interface Reminder extends CreateInfo, ModifiedInfo {
 	public String getSmsContent();
 
 	public void setSmsContent(String smsContent);
-	
+
+	public boolean getSmsEnabled();
+
+	public void setSmsEnabled(boolean smsEnabled);
+
 	public boolean isEmailCopyOnly();
 	
 	public void setEmailCopyOnly(boolean emailCopyOnly);

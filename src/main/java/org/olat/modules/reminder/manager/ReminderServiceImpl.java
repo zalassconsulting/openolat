@@ -19,24 +19,8 @@
  */
 package org.olat.modules.reminder.manager;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import org.apache.logging.log4j.Logger;
+import org.apache.velocity.VelocityContext;
 import org.olat.basesecurity.GroupRoles;
 import org.olat.basesecurity.manager.IdentityToIdentityRelationDAO;
 import org.olat.core.commons.services.sms.SimpleMessageException;
@@ -46,22 +30,14 @@ import org.olat.core.helpers.Settings;
 import org.olat.core.id.Identity;
 import org.olat.core.logging.Tracing;
 import org.olat.core.util.Formatter;
+import org.olat.core.util.SmsTemplate;
 import org.olat.core.util.StringHelper;
 import org.olat.core.util.Util;
 import org.olat.core.util.i18n.I18nManager;
 import org.olat.core.util.i18n.I18nModule;
-import org.olat.core.util.mail.MailBundle;
-import org.olat.core.util.mail.MailContext;
-import org.olat.core.util.mail.MailContextImpl;
-import org.olat.core.util.mail.MailHelper;
-import org.olat.core.util.mail.MailManager;
-import org.olat.core.util.mail.MailerResult;
+import org.olat.core.util.mail.*;
 import org.olat.course.assessment.manager.UserCourseInformationsManager;
-import org.olat.modules.reminder.EmailCopy;
-import org.olat.modules.reminder.Reminder;
-import org.olat.modules.reminder.ReminderRule;
-import org.olat.modules.reminder.ReminderService;
-import org.olat.modules.reminder.SentReminder;
+import org.olat.modules.reminder.*;
 import org.olat.modules.reminder.model.*;
 import org.olat.modules.reminder.rule.DateRuleSPI;
 import org.olat.modules.reminder.ui.ReminderAdminController;
@@ -73,6 +49,11 @@ import org.olat.repository.manager.RepositoryEntryLifecycleDAO;
 import org.olat.user.UserManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.io.*;
+import java.text.ParseException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Initial date: 08.04.2015<br>
@@ -223,6 +204,7 @@ public class ReminderServiceImpl implements ReminderService {
                     reminder.setDescription(importReminder.getDescription());
                     reminder.setEmailBody(importReminder.getEmailBody());
                     reminder.setSmsContent(importReminder.getSmsContent());
+                    reminder.setSmsEnabled(importReminder.isSmsEnabled());
                     reminder.setEmailSubject(importReminder.getEmailSubject() == null ? importReminder.getDescription() : importReminder.getEmailSubject());
                     reminder.setConfiguration(importReminder.getConfiguration());
                     reminder.setEmailCopyOnly(importReminder.isEmailCopyOnly());
@@ -254,17 +236,20 @@ public class ReminderServiceImpl implements ReminderService {
     }
 
     @Override
-    public void sendSms(Reminder reminder, Identity identity) {
-        log.info("MY_IGNIS identityToRemind - content: {}, phone, {}, identity {}", reminder.getSmsContent(), identity.getUser().getSmsTelMobile(), identity);
-//        if (reminder.getSmsContent() != null && identity.getUser().getSmsTelMobile() != null) {
+    public void sendSms(Reminder reminder, Identity identity, Locale locale, String url) {
+        String smsContent = reminder.getSmsContent();
+        if (reminder.getSmsEnabled() && smsContent != null && !smsContent.isBlank() && identity.getUser().getSmsTelMobile() != null) {
+            RepositoryEntry entry = reminder.getEntry();
             try {
-                messageService.sendMessage(reminder.getSmsContent(), "0048698790533", identity);
-//          messageService.sendMessage(reminder.getSmsContent(), identity.getUser().getSmsTelMobile(), identity);
+                CourseReminderTemplate template = new CourseReminderTemplate("", smsContent, url, entry, locale, lifecycleDao);
+                String renderedContent = SmsTemplate.renderSmsTemplate(identity, template);
+                messageService.sendMessage(renderedContent, identity.getUser().getSmsTelMobile(), identity);
             } catch (SimpleMessageException e) {
                 throw new RuntimeException(e);
+            } catch (Exception e) {
+                log.error("Repo-Id: {}, Reminder-Id: {}, body: {}", entry.getKey(), reminder.getKey(), smsContent);
             }
-//        }
-
+        }
     }
 
     @Override
@@ -296,7 +281,6 @@ public class ReminderServiceImpl implements ReminderService {
             String status;
             Long currentRun = runsInfos.get(identityToRemind.getKey());
             long run = currentRun == null || currentRun.longValue() < 1 ? 1l : currentRun.longValue();
-
             CourseReminderTemplate template = new CourseReminderTemplate(subject, body, url, entry, locale, lifecycleDao);
             MailBundle bundle = mailManager.makeMailBundle(context, identityToRemind, template, null, metaId, overviewResult);
             if (bundle == null || subject == null || body == null) {
@@ -317,8 +301,7 @@ public class ReminderServiceImpl implements ReminderService {
                 } else {
                     status = "ok";
                     sendReminderCopies(reminder, bundle, template, copyOwners, copyAddresses);
-                    log.info("MY_IGNIS identityToRemind: {}", identityToRemind.getUser().getFirstName());
-                    sendSms(reminder, identityToRemind);
+                    sendSms(reminder, identityToRemind, locale, url);
                 }
             }
             if (identityToRemind instanceof ReminderIdentity reminderIdentity) {

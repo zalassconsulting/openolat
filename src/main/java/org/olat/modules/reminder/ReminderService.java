@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.OutputStream;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import org.olat.core.id.Identity;
 import org.olat.core.util.mail.MailerResult;
@@ -121,5 +122,5 @@ public interface ReminderService {
 	 */
 	public List<Reminder> importRawReminders(Identity creator, RepositoryEntry newEntry, File fExportedDataDir);
 
-	void sendSms(Reminder reminder, Identity identity);
+	void sendSms(Reminder reminder, Identity identity, Locale locale, String url);
 }

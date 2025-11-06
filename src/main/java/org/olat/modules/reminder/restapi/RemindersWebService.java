@@ -163,6 +163,7 @@ public class RemindersWebService {
 		reminder.setEmailSubject(reminderVo.getEmailSubject());
 		reminder.setEmailBody(reminderVo.getEmailBody());
 		reminder.setSmsContent(reminderVo.getSmsContent());
+		reminder.setSmsEnabled(reminderVo.getSmsEnabled());
 
 		if(reminderVo.getRules() != null && !reminderVo.getRules().isEmpty()) {
 			ReminderRules rules = new ReminderRules();

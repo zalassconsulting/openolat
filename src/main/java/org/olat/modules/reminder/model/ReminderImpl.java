@@ -106,6 +106,8 @@ public class ReminderImpl implements Reminder, Persistable {
 	private String customEmailCopy;
 	@Column(name="r_sms_content", nullable=true, insertable=true, updatable=true)
 	private String smsContent;
+	@Column(name="r_sms_enabled", nullable=true, insertable=true, updatable=true)
+	private boolean smsEnabled;
 	
 	@ManyToOne(targetEntity=RepositoryEntry.class,fetch=FetchType.LAZY,optional=true)
 	@JoinColumn(name="fk_entry", nullable=true, insertable=true, updatable=false)
@@ -212,6 +214,16 @@ public class ReminderImpl implements Reminder, Persistable {
 	@Override
 	public void setSmsContent(String smsContent) {
 		this.smsContent = smsContent;
+	}
+
+	@Override
+	public boolean getSmsEnabled() {
+		return smsEnabled;
+	}
+
+	@Override
+	public void setSmsEnabled(boolean smsEnabled) {
+		this.smsEnabled = smsEnabled;
 	}
 
 	@Override

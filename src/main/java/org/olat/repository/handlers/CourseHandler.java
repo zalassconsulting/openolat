@@ -709,6 +709,7 @@ public class CourseHandler implements RepositoryHandler {
 					clonedReminder.setEmailSubject(reminder.getEmailSubject());
 					clonedReminder.setEmailBody(reminder.getEmailBody());
 					clonedReminder.setSmsContent(reminder.getSmsContent());
+					clonedReminder.setSmsEnabled(reminder.getSmsEnabled());
 					clonedReminder.setEmailCopyOnly(reminder.isEmailCopyOnly());
 					clonedReminder.setEmailCopy(new HashSet<>(reminder.getEmailCopy()));
 					clonedReminder.setCustomEmailCopy(reminder.getCustomEmailCopy());
@@ -743,6 +744,7 @@ public class CourseHandler implements RepositoryHandler {
 			clonedReminder.setEmailSubject(reminder.getEmailSubject());
 			clonedReminder.setEmailBody(reminder.getEmailBody());
 			clonedReminder.setSmsContent(reminder.getSmsContent());
+			clonedReminder.setSmsEnabled(reminder.getSmsEnabled());
 			clonedReminder.setEmailCopyOnly(reminder.isEmailCopyOnly());
 			clonedReminder.setEmailCopy(new HashSet<>(reminder.getEmailCopy()));
 			clonedReminder.setCustomEmailCopy(reminder.getCustomEmailCopy());
