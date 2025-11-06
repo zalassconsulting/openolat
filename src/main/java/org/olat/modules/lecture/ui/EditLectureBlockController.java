@@ -22,13 +22,7 @@ package org.olat.modules.lecture.ui;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.olat.basesecurity.BaseSecurity;
 import org.olat.basesecurity.Group;
@@ -38,13 +32,7 @@ import org.olat.core.commons.persistence.DB;
 import org.olat.core.gui.UserRequest;
 import org.olat.core.gui.components.form.flexible.FormItem;
 import org.olat.core.gui.components.form.flexible.FormItemContainer;
-import org.olat.core.gui.components.form.flexible.elements.AutoCompleter;
-import org.olat.core.gui.components.form.flexible.elements.DateChooser;
-import org.olat.core.gui.components.form.flexible.elements.FormLink;
-import org.olat.core.gui.components.form.flexible.elements.FormToggle;
-import org.olat.core.gui.components.form.flexible.elements.MultipleSelectionElement;
-import org.olat.core.gui.components.form.flexible.elements.SingleSelection;
-import org.olat.core.gui.components.form.flexible.elements.TextElement;
+import org.olat.core.gui.components.form.flexible.elements.*;
 import org.olat.core.gui.components.form.flexible.impl.Form;
 import org.olat.core.gui.components.form.flexible.impl.FormBasicController;
 import org.olat.core.gui.components.form.flexible.impl.FormEvent;
@@ -141,7 +129,11 @@ public class EditLectureBlockController extends FormBasicController {
 	private FormToggle enabledOnlineMeetingEl;
 	private SingleSelection plannedLecturesEl;
 	private MultipleSelectionElement teacherEl;
-	
+
+    private IntegerElement smpTrainerCostEl;
+    private IntegerElement smpVenueCostEl;
+    private IntegerElement smpAuxCostEl;
+
 	private final boolean readOnly;
 	private final boolean embedded;
 	private RepositoryEntry entry;
@@ -331,7 +323,28 @@ public class EditLectureBlockController extends FormBasicController {
 		//freeze it after roll call done
 		// SMP: always freeze it
 		plannedLecturesEl.setEnabled(false);
-		
+
+        // SMP: costs
+        String costsPage = velocity_root + "/smp_costs.html";
+        FormLayoutContainer costLayout = uifactory.addCustomFormLayout("costLayout", "smp.costs", costsPage, formLayout);
+        costLayout.setElementCssClass("o_lecture_costs");
+        costLayout.setFormLayout("0_12");
+
+        smpTrainerCostEl = uifactory.addIntegerElement("smp.costs.trainer", 0,  costLayout);
+        smpTrainerCostEl.setPlaceholderKey("smp.costs.trainer", null);
+
+        smpVenueCostEl = uifactory.addIntegerElement("smp.costs.venue", 0, costLayout);
+        smpVenueCostEl.setPlaceholderKey("smp.costs.venue", null);
+
+        smpAuxCostEl = uifactory.addIntegerElement("smp.costs.aux", 0, costLayout);
+        smpAuxCostEl.setPlaceholderKey("smp.costs.aux", null);
+
+        if (lectureBlock != null) {
+            smpTrainerCostEl.setIntValue(lectureBlock.getSmpTrainerCost() != null ? lectureBlock.getSmpTrainerCost() : 0);
+            smpVenueCostEl.setIntValue(lectureBlock.getSmpVenueCost() != null ? lectureBlock.getSmpVenueCost() : 0);
+            smpAuxCostEl.setIntValue(lectureBlock.getSmpAuxiliaryCost() != null ? lectureBlock.getSmpAuxiliaryCost() : 0);
+        }
+
 		// Location
 		String location = lectureBlock == null ? "" : lectureBlock.getLocation();
 		locationEl = uifactory.addTextElementWithAutoCompleter("location", "lecture.location", 128, location, formLayout);
@@ -706,7 +719,19 @@ public class EditLectureBlockController extends FormBasicController {
 		int plannedLectures = period.getDays() + 1;
 
 		lectureBlock.setPlannedLecturesNumber(plannedLectures);
-		
+
+        if (smpTrainerCostEl.getValue() != null) {
+            lectureBlock.setSmpTrainerCost(Integer.parseInt(smpTrainerCostEl.getValue()));
+        }
+
+        if (smpVenueCostEl.getValue() != null) {
+            lectureBlock.setSmpVenueCost(Integer.parseInt(smpVenueCostEl.getValue()));
+        }
+
+        if (smpAuxCostEl.getValue() != null) {
+            lectureBlock.setSmpAuxiliaryCost(Integer.parseInt(smpAuxCostEl.getValue()));
+        }
+
 		if(addLectureCtxt != null) {
 			addLectureCtxt.setTeachers(getSelectedTeachers());
 			addLectureCtxt.setLectureBlock(lectureBlock);
