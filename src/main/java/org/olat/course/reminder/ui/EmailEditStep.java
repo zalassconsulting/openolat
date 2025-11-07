@@ -39,12 +39,12 @@ public class EmailEditStep extends BasicStep {
 	public EmailEditStep(UserRequest ureq) {
 		super(ureq);
 		setI18nTitleAndDescr("edit.email", null);
-		setNextStep(Step.NOSTEP);
+		setNextStep(new SmsEditStep(ureq));
 	}
 
 	@Override
 	public PrevNextFinishConfig getInitialPrevNextFinishConfig() {
-		return PrevNextFinishConfig.BACK_FINISH;
+		return PrevNextFinishConfig.BACK_NEXT_FINISH;
 	}
 
 	@Override

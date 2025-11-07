@@ -45,7 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  *
  */
 public class SmsPhoneSendController extends FormBasicController {
-	
+
 	private TextElement newPhoneEl;
 	
 	private final String sentToken;

@@ -26,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 import org.olat.core.CoreSpringFactory;
 import org.olat.core.commons.services.scheduler.JobWithDB;
 import org.olat.core.logging.Tracing;
+import org.olat.core.util.mail.MailerResult;
 import org.olat.modules.reminder.Reminder;
 import org.olat.modules.reminder.ReminderModule;
 import org.olat.modules.reminder.ReminderService;
