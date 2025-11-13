@@ -44,8 +44,13 @@ public class RepositoryEntryCertificateConfigurationDAO {
 
 	@Autowired
 	private DB dbInstance;
-	
-	public RepositoryEntryCertificateConfiguration createConfiguration(RepositoryEntry entry, CertificateTemplate template) {
+
+    public RepositoryEntryCertificateConfiguration createConfiguration(RepositoryEntry entry) {
+        return createConfiguration(entry, null);
+    }
+
+
+    public RepositoryEntryCertificateConfiguration createConfiguration(RepositoryEntry entry, CertificateTemplate template) {
 		RepositoryEntryCertificateConfigurationImpl config = new RepositoryEntryCertificateConfigurationImpl();
 		config.setCreationDate(new Date());
 		config.setLastModified(config.getCreationDate());

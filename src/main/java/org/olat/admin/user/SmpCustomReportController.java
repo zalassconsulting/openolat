@@ -43,6 +43,7 @@ public class SmpCustomReportController extends FormBasicController {
     private FormLink incomeButton;
     private FormLink dealerBudgetButton;
     private FormLink trainerReportButton;
+    private FormLink planningReportButton;
     private DateChooser dateChooser;
     private SingleSelection contextSelection;
 
@@ -106,6 +107,8 @@ public class SmpCustomReportController extends FormBasicController {
         trainerReportButton = uifactory.addFormLink(translate("menu.smp.button.trainerreport"), formLayout, Link.BUTTON);
         trainerReportButton.addActionListener(FormEvent.ONCLICK);
 
+        planningReportButton = uifactory.addFormLink(translate("menu.smp.button.planningreport"), formLayout, Link.BUTTON);
+        planningReportButton.addActionListener(FormEvent.ONCLICK);
 
     }
 
@@ -136,6 +139,10 @@ public class SmpCustomReportController extends FormBasicController {
             logInfo("Sending trainer report to " + targetEmail + " for dates " + from + " to " + to);
             requestSendingReport(ReportType.TRAINERS);
             fireEvent(ureq, Event.DONE_EVENT);
+        } else if (planningReportButton == source) {
+            logInfo("Sending planning report to " + targetEmail + " for dates " + from + " to " + to);
+            requestSendingReport(ReportType.PLANNING);
+            fireEvent(ureq, Event.DONE_EVENT);
         }
         super.formInnerEvent(ureq, source, event);
     }
@@ -150,7 +157,8 @@ public class SmpCustomReportController extends FormBasicController {
         AP("action-plan/excel"),
         INCOME("income/excel"),
         DEALER_BUDGET("dealer-budget/excel"),
-        TRAINERS("trainers/excel");
+        TRAINERS("trainers/excel"),
+        PLANNING("planning/excel");
 
         private final String path;
 
