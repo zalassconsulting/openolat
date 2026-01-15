@@ -79,6 +79,8 @@ public class CourseReminderTemplate extends MailTemplate {
 
     private static final String LECTURE_BLOCK_TITLE = "lectureBlockTitle";
     private static final String LECTURE_BLOCK_START_DATE = "lectureBlockStartDate";
+    private static final String LECTURE_BLOCK_START_TIME = "lectureBlockStartTime";
+    private static final String LECTURE_BLOCK_FINISH_TIME = "lectureBlockFinishTime";
     private static final String LECTURE_BLOCK_LOCATION = "lectureBlockLocation";
 
     private final String url;
@@ -202,6 +204,9 @@ public class CourseReminderTemplate extends MailTemplate {
                 putVariablesInMailContext(LECTURE_BLOCK_TITLE, lectureBlock.getTitle());
                 putVariablesInMailContext(LECTURE_BLOCK_START_DATE, formatter.formatDateAndTime(lectureBlock.getStartDate()));
                 putVariablesInMailContext(LECTURE_BLOCK_LOCATION, lectureBlock.getLocation());
+                putVariablesInMailContext(LECTURE_BLOCK_START_TIME, formatter.formatDateAndTime(lectureBlock.getStartDate()));
+                putVariablesInMailContext(LECTURE_BLOCK_FINISH_TIME, formatter.formatDateAndTime(lectureBlock.getEndDate()));
+
             }
         }
     }

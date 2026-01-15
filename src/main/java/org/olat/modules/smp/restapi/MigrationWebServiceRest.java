@@ -1,6 +1,5 @@
 package org.olat.modules.smp.restapi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -31,7 +30,7 @@ import java.util.List;
 @Component
 @Path("migration/assessment")
 @Produces(MediaType.APPLICATION_JSON)
-public class MigrationWebService {
+public class MigrationWebServiceRest {
 
     @Autowired
     private AssessmentEntryDAO aeDao;

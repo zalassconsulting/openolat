@@ -19,15 +19,9 @@
  */
 package org.olat.basesecurity.manager;
 
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.FlushModeType;
-import jakarta.persistence.TemporalType;
-import jakarta.persistence.TypedQuery;
+import jakarta.persistence.*;
 
 import org.apache.logging.log4j.Logger;
 import org.olat.basesecurity.Authentication;
@@ -43,6 +37,7 @@ import org.olat.core.logging.AssertException;
 import org.olat.core.logging.Tracing;
 import org.olat.core.util.Encoder;
 import org.olat.core.util.StringHelper;
+import org.olat.modules.assessment.model.Mapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -629,5 +624,42 @@ public class AuthenticationDAO {
 				.setParameter("providers", providers)
 				.executeUpdate();
 	}
+
+
+    public List<Mapping> getByTestIds(List<Long> ids) {
+        EntityManager em = dbInstance.getCurrentEntityManager();
+        return em.createNamedQuery("risorsesByTestIds").setParameter("testIds", ids).getResultList();
+    }
+
+    public void insertMigrated(String email, String pass) {
+        String query = "insert into lw_usr_pass (email, pass) values (?, ?)";
+        dbInstance.getCurrentEntityManager().createNativeQuery(query)
+                .setParameter(1, email)
+                .setParameter(2, pass)
+                .executeUpdate();
+    }
+
+    public Map<Long, Tuple> getTestRisorsMap() {
+        Map<Long, Tuple> ret = new HashMap<>();
+        String query = "select test_id, risors_id, oc_id, ot_id, max_score, cut_val, score_multiplier from lw_risors_mapping where test_id != 0;";
+        Query nativeQuery = dbInstance.getCurrentEntityManager().createNativeQuery(query, Tuple.class);
+        List<Tuple> tuples = nativeQuery.getResultList();
+        for(Tuple tuple : tuples) {
+            ret.put(tuple.get("test_id", Long.class), tuple);
+        }
+        return ret;
+    }
+
+    public Map<Long, Tuple> getCourseRisorsMap() {
+        Map<Long, Tuple> ret = new HashMap<>();
+        String query = "select course_id, risors_id, oc_id, ot_id from lw_risors_mapping where test_id = 0;";
+        List<Tuple> tuples = dbInstance.getCurrentEntityManager().createNativeQuery(query, Tuple.class).getResultList();
+        for(Tuple tuple : tuples) {
+            ret.put(tuple.get("course_id", Long.class), tuple);
+        }
+        return ret;
+    }
+
+
 
 }

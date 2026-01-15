@@ -23,15 +23,17 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.logging.log4j.Logger;
+import org.olat.basesecurity.manager.OrganisationDAO;
 import org.olat.core.CoreSpringFactory;
 import org.olat.core.commons.fullWebApp.LayoutMain3ColsController;
 import org.olat.core.commons.persistence.DB;
@@ -70,16 +72,17 @@ import org.olat.ims.qti21.manager.AssessmentTestSessionDAO;
 import org.olat.ims.qti21.model.IdentifierGenerator;
 import org.olat.ims.qti21.model.InMemoryOutcomeListener;
 import org.olat.ims.qti21.model.QTI21QuestionType;
-import org.olat.ims.qti21.model.xml.AssessmentItemFactory;
-import org.olat.ims.qti21.model.xml.AssessmentTestFactory;
-import org.olat.ims.qti21.model.xml.ManifestBuilder;
-import org.olat.ims.qti21.model.xml.ManifestMetadataBuilder;
+import org.olat.ims.qti21.model.xml.*;
+import org.olat.ims.qti21.model.xml.interactions.MultipleChoiceAssessmentItemBuilder;
+import org.olat.ims.qti21.model.xml.interactions.SingleChoiceAssessmentItemBuilder;
 import org.olat.ims.qti21.pool.QTI21QPoolServiceProvider;
 import org.olat.ims.qti21.ui.AssessmentTestDisplayController;
 import org.olat.ims.qti21.ui.QTI21AssessmentDetailsController;
 import org.olat.ims.qti21.ui.QTI21OverrideOptions;
 import org.olat.ims.qti21.ui.QTI21RuntimeController;
 import org.olat.ims.qti21.ui.editor.AssessmentTestComposerController;
+import org.olat.modules.assessment.model.QuestionDTO;
+import org.olat.modules.assessment.model.SectionDTO;
 import org.olat.modules.qpool.QPoolService;
 import org.olat.modules.qpool.QuestionItemShort;
 import org.olat.modules.qpool.model.QItemList;
@@ -97,13 +100,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import uk.ac.ed.ph.jqtiplus.node.item.AssessmentItem;
-import uk.ac.ed.ph.jqtiplus.node.test.AbstractPart;
-import uk.ac.ed.ph.jqtiplus.node.test.AssessmentItemRef;
-import uk.ac.ed.ph.jqtiplus.node.test.AssessmentSection;
-import uk.ac.ed.ph.jqtiplus.node.test.AssessmentTest;
-import uk.ac.ed.ph.jqtiplus.node.test.TestPart;
+import uk.ac.ed.ph.jqtiplus.node.item.interaction.choice.SimpleChoice;
+import uk.ac.ed.ph.jqtiplus.node.test.*;
 import uk.ac.ed.ph.jqtiplus.resolution.ResolvedAssessmentTest;
 import uk.ac.ed.ph.jqtiplus.serialization.QtiSerializer;
+import uk.ac.ed.ph.jqtiplus.types.Identifier;
 
 /**
  * 
@@ -133,6 +134,9 @@ public class QTI21AssessmentTestHandler extends FileHandler {
 	
 	@Autowired
 	private AssessmentTestSessionDAO assessmentTestSessionDao;
+
+    @Autowired
+    private OrganisationDAO odao;
 
 	@Override
 	public String getSupportedType() {
@@ -440,4 +444,194 @@ public class QTI21AssessmentTestHandler extends FileHandler {
 	protected String getDeletedFilePrefix() {
 		return null;
 	}
+
+
+    public void migrateTest(String[] to, List<SectionDTO> sections, Identity idn, String org, int id, Map<String, Integer> meta) {
+        // intro
+        ImsQTI21Resource ores = new ImsQTI21Resource();
+        OLATResource resource = OLATResourceManager.getInstance().findOrPersistResourceable(ores);
+        RepositoryEntry re = repositoryService.create(idn, null, "",
+                to[0], to[1],
+                resource, RepositoryEntryStatusEnum.preparation, RepositoryEntryRuntimeType.embedded, odao.loadByLabel(org).get(0));
+        QTI21DeliveryOptions options = qtiService.getDeliveryOptions(re);
+        options.setShowTitles(false);
+        options.setDisplayQuestionProgress(true);
+        options.setMaxAttempts(meta.get("liczba_prob"));
+        qtiService.setDeliveryOptions(re, options);
+        dbInstance.commit();
+        File repositoryDir = new File(FileResourceManager.getInstance().getFileResourceRoot(re.getOlatResource()), FileResourceManager.ZIPDIR);
+        if(!repositoryDir.exists()) {
+            repositoryDir.mkdirs();
+        }
+        // diff
+        String title = sections.get(0).getTitle();
+        List<SectionDTO> dbd = sections.stream().flatMap(s -> s.getQsts().stream()).collect(Collectors.groupingBy(q -> q.getDifficulty()))
+                .entrySet().stream().map(e -> new SectionDTO(title + " " + e.getKey(), e.getValue())).collect(Collectors.toList());
+        // jazda!
+        ManifestBuilder manifestBuilder = ManifestBuilder.createAssessmentTestBuilder();
+        QtiSerializer qtiSerializer = qtiService.qtiSerializer();
+        Map<Integer, Map<File, AssessmentItem>> sectionItems = new HashMap<>();
+        for(SectionDTO s : dbd) {
+            Map<File, AssessmentItem> items = new HashMap<>();
+            for(QuestionDTO q : s.getQsts()) {
+                if(q.getType().equals("qnSelectOne") || q.getType().equals("qnSelectBoolean")) {
+                    putSingleChoice(q, repositoryDir, manifestBuilder, qtiSerializer, q.getqContent(), items);
+                } else if(q.getType().equals("qnSelect")) {
+                    putMultiChoice(q, repositoryDir, manifestBuilder, qtiSerializer, q.getqContent(), items);
+                } else {
+                    log.warn("Unsupported question type putting stub {0}, {1}", q.getType(), q.getqContent());
+                    putStub(q, repositoryDir, manifestBuilder, qtiSerializer, q.getqContent(), items);
+                }
+            }
+            sectionItems.put(s.getQsts().get(0).getDifficulty(), items);
+        }
+
+        File testFile = new File(repositoryDir, IdentifierGenerator.newAssessmentTestFilename());
+        AssessmentTest assessmentTest = AssessmentTestFactory.createAssessmentTest(to[0], to[0]);
+        manifestBuilder.appendAssessmentTest(testFile.getName());
+
+        AssessmentTestBuilder tb = new AssessmentTestBuilder(assessmentTest);
+        if(meta.get("czas_egzaminu") > 0) {
+            tb.setMaximumTimeLimits(Long.valueOf(meta.get("czas_egzaminu")) * 60l);
+        }
+        BigDecimal tp = new BigDecimal(0);
+
+        Map<Integer, Integer> ptByDiff = getDistribution(
+                dbd, meta.get("difficulty_easy"), meta.get("difficulty_middle"), meta.get("difficulty_hard"));
+
+        for (int i = 1; i < dbd.size(); i++) {
+            AssessmentTestFactory.appendAssessmentSection(title + i, assessmentTest.getTestParts().get(0));
+        }
+
+        Integer total = meta.get("ilosc_pytan") > 0 ? meta.get("ilosc_pytan") : Long.valueOf(
+                sectionItems.entrySet().stream().flatMap(e -> e.getValue().entrySet().stream()).count()).intValue();
+
+        for (int i = 0; i < dbd.size(); i++) {
+            AssessmentSection as = assessmentTest.getTestParts().get(0).getAssessmentSections().get(i);
+            SectionDTO section = dbd.get(i);
+            Map<File, AssessmentItem> si = sectionItems.get(section.getDiff());
+            BigDecimal mtp = ptByDiff.isEmpty() ?
+                    new BigDecimal(1) : ptByDiff.containsKey(section.getDiff()) ?
+                    new BigDecimal(ptByDiff.get(section.getDiff())).divide(new BigDecimal(100)) : new BigDecimal(1);
+            BigDecimal chose = new BigDecimal(total).multiply(mtp);
+            chose = chose.setScale(0, RoundingMode.HALF_UP);
+            tp = tp.add(chose.multiply(new BigDecimal(section.getDiff())));
+
+            Selection selection = new Selection(as);
+            selection.setSelect(chose.intValue());
+            selection.setWithReplacement(true);
+            as.setSelection(selection);
+
+            Ordering ordering = new Ordering(as);
+            ordering.setShuffle(true);
+            as.setOrdering(ordering);
+        }
+
+        BigDecimal prog = new BigDecimal(meta.get("prog_zaliczenia")).divide(new BigDecimal(100)).multiply(tp);
+        tb.setCutValue(prog.doubleValue());
+        tb.build();
+
+        for (int i = 0; i < dbd.size(); i++) {
+            AssessmentSection as = assessmentTest.getTestParts().get(0).getAssessmentSections().get(i);
+            for(Map.Entry<File, AssessmentItem> en : sectionItems.get(dbd.get(i).getQsts().get(0).getDifficulty()).entrySet()) {
+                try {
+                    AssessmentTestFactory.appendAssessmentItem(as, en.getKey().getName());
+                } catch (URISyntaxException e) {
+                    log.error("", e);
+                }
+
+                try(FileOutputStream out = new FileOutputStream(en.getKey())) {
+                    qtiSerializer.serializeJqtiObject(en.getValue(), out);
+                } catch(Exception e) {
+                    log.error("", e);
+                }
+            }
+        }
+
+        try(FileOutputStream out = new FileOutputStream(testFile)) {
+            qtiSerializer.serializeJqtiObject(assessmentTest, out);
+        } catch(Exception e) {
+            log.error("", e);
+        }
+
+        manifestBuilder.write(new File(repositoryDir, "imsmanifest.xml"));
+    }
+
+    private Map<Integer, Integer> getDistribution(List<SectionDTO> scs, int... dist) {
+        if(dist.length != 3 || IntStream.of(dist).sum() != 100) return Collections.emptyMap();
+        List<SectionDTO> sscs = scs.stream().sorted(Comparator.comparing(SectionDTO::getDiff))
+                .collect(Collectors.toList());
+        int si = 0;
+        Map<Integer, Integer> ret = new HashMap<>();
+        for(int i = 0; i < 3; i++) {
+            if(dist[i] == 0) continue;
+            Integer diff = sscs.get(si).getDiff();
+            if(ret.containsKey(diff)) {
+                ret.put(diff, dist[i] + ret.get(diff));
+            }
+            else ret.put(diff, dist[i]);
+            if(si < sscs.size() - 1) si++;
+        }
+        return ret;
+    }
+
+    private void putStub(QuestionDTO q, File directory, ManifestBuilder manifestBuilder, QtiSerializer qtiSerializer, String title, Map<File, AssessmentItem> map) {
+        File itemFile = new File(directory, IdentifierGenerator.newAsString(QTI21QuestionType.unkown.getPrefix()) + ".xml");
+        manifestBuilder.appendAssessmentItem(itemFile.getName());
+        AssessmentItem ai = AssessmentItemFactory.createAssessmentItem(QTI21QuestionType.unkown, q.getqContent());
+        AssessmentItemFactory.appendDefaultItemBody(ai);
+        map.put(itemFile, ai);
+    }
+
+    private void putSingleChoice(QuestionDTO q, File directory, ManifestBuilder manifestBuilder, QtiSerializer qtiSerializer, String title, Map<File, AssessmentItem> map) {
+        File itemFile = new File(directory, IdentifierGenerator.newAsString(QTI21QuestionType.sc.getPrefix()) + ".xml");
+        SingleChoiceAssessmentItemBuilder builder = new SingleChoiceAssessmentItemBuilder(title, "", qtiSerializer);
+
+        builder.setQuestion(q.getqContent());
+        builder.setShuffle(true);
+
+        List<SimpleChoice> choiceList = new ArrayList<>();
+        int idx = 0;
+        for(String ch : q.getaOpts()) {
+            SimpleChoice choice = AssessmentItemFactory.createSimpleChoice(builder.getChoiceInteraction(), ch, QTI21QuestionType.mc.getPrefix());
+            if(q.getCorrect().contains(idx)) {
+                builder.setCorrectAnswer(choice.getIdentifier());
+            }
+            choiceList.add(choice);
+            idx++;
+        }
+        builder.setSimpleChoices(choiceList);
+        builder.setMaxScore(Double.valueOf(q.getDifficulty()));
+        builder.build();
+
+        manifestBuilder.appendAssessmentItem(itemFile.getName());
+        map.put(itemFile, builder.getAssessmentItem());
+    }
+
+    private void putMultiChoice(QuestionDTO q, File directory, ManifestBuilder manifestBuilder, QtiSerializer qtiSerializer, String title, Map<File, AssessmentItem> map) {
+        File itemFile = new File(directory, IdentifierGenerator.newAsString(QTI21QuestionType.mc.getPrefix()) + ".xml");
+        MultipleChoiceAssessmentItemBuilder builder = new MultipleChoiceAssessmentItemBuilder(title,"", qtiSerializer);
+        builder.setQuestion(q.getqContent());
+        builder.setShuffle(true);
+
+        List<SimpleChoice> choiceList = new ArrayList<>();
+        List<Identifier> correctAnswerList = new ArrayList<>();
+        int idx = 0;
+        for(String ch : q.getaOpts()) {
+            SimpleChoice choice = AssessmentItemFactory.createSimpleChoice(builder.getChoiceInteraction(), ch, QTI21QuestionType.mc.getPrefix());
+            if(q.getCorrect().contains(idx)) {
+                correctAnswerList.add(choice.getIdentifier());
+            }
+            choiceList.add(choice);
+            idx++;
+        }
+        builder.setSimpleChoices(choiceList);
+        builder.setCorrectAnswers(correctAnswerList);
+        builder.setMaxScore(Double.valueOf(q.getDifficulty()));
+        builder.build();
+
+        manifestBuilder.appendAssessmentItem(itemFile.getName());
+        map.put(itemFile, builder.getAssessmentItem());
+    }
+
 }
