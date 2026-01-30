@@ -44,6 +44,7 @@ import org.olat.core.commons.persistence.QueryBuilder;
 import org.olat.core.id.Identity;
 import org.olat.core.util.StringHelper;
 import org.olat.group.BusinessGroup;
+import org.olat.group.model.IdentityMemberView;
 import org.olat.group.model.MemberView;
 import org.olat.group.model.SearchBusinessGroupParams;
 import org.olat.group.ui.main.SearchMembersParams;
@@ -103,7 +104,7 @@ public class MemberViewQueries {
 			Date lastModified = (Date)objects[pos++];
 			
 			Identity identity = (Identity)objects[pos++];
-			MemberView view = views.computeIfAbsent(identity, id -> new MemberView(id, userPropertyHandlers, locale));
+			MemberView view = views.computeIfAbsent(identity, id -> new IdentityMemberView(id, userPropertyHandlers, locale));
 			view.setCreationDate(creationDate);
 			view.setLastModified(lastModified);
 			view.addGroup(businessGroup);
@@ -271,7 +272,7 @@ public class MemberViewQueries {
 			Identity member = membership.getIdentity();
 			
 			MemberView view = views.computeIfAbsent(member, id
-					-> new MemberView(id, userPropertyHandlers, locale));
+					-> new IdentityMemberView(id, userPropertyHandlers, locale));
 			
 			// Creation date: take the earliest date if user has multiple membership entries
 			if (view.getCreationDate() == null || membership.getCreationDate().before(view.getCreationDate())) {

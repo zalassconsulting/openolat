@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.olat.commons.memberlist.model.CurriculumElementInfos;
 import org.olat.commons.memberlist.model.CurriculumMemberInfos;
+import org.olat.commons.memberlist.model.OrganisationInfo;
 import org.olat.core.commons.persistence.SortKey;
 import org.olat.core.gui.components.form.flexible.elements.FormLink;
 import org.olat.core.gui.components.form.flexible.impl.elements.table.DefaultFlexiTableDataModel;
@@ -47,11 +48,17 @@ public class MemberListTableModel extends DefaultFlexiTableDataModel<MemberRow> 
 	private final boolean onlineStatusEnabled;
 	private final Translator presenceTranslator;
 	private Map<Long,CurriculumMemberInfos> curriculumInfos;
-	
+	private Map<Long, OrganisationInfo> organizationInfos;
+
 	public MemberListTableModel(FlexiTableColumnModel columnModel, Locale locale, boolean onlineStatusEnabled) {
 		super(columnModel);
 		this.presenceTranslator = Util.createPackageTranslator(UserPortraitComponent.class, locale);
 		this.onlineStatusEnabled = onlineStatusEnabled;
+	}
+
+	@Override
+	public void setObjects(List<MemberRow> objects) {
+		super.setObjects(objects);
 	}
 
 	@Override
@@ -71,28 +78,32 @@ public class MemberListTableModel extends DefaultFlexiTableDataModel<MemberRow> 
 	@Override
 	public Object getValueAt(MemberRow row, int col) {
 		if(col >= 0 && col < COLS.length) {
-			switch(COLS[col]) {
-				case identityStatus: return row.getView().getIdentityStatus();
-				case firstTime: return row.getFirstTime();
-				case lastTime: return row.getLastTime();
-				case role: return row.getMembership();
-				case groups: return row;
-				case online: return getChatLink(row);
-				case curriculumDisplayName: {
-					CurriculumElementInfos curriculumElementInfos = getCurriculumElementInfos(row);
-					return curriculumElementInfos == null ? null : curriculumElementInfos.getCurriculumDisplayName();
-				}
-				case rootCurriculumElementIdentifier: {
-					CurriculumElementInfos curriculumElementInfos = getCurriculumElementInfos(row);
-					return curriculumElementInfos == null ? null : curriculumElementInfos.getRootElementIdentifier();
-				}
-				case rootCurriculumElementDisplayName: {
-					CurriculumElementInfos curriculumElementInfos = getCurriculumElementInfos(row);
-					return curriculumElementInfos == null ? null : curriculumElementInfos.getRootElementDisplayName();
-				}
-				case tools: return row.getToolsLink();
-				default: return "ERROR";
-			}
+            return switch (COLS[col]) {
+                case identityStatus -> row.getView().getIdentityStatus();
+                case firstTime -> row.getFirstTime();
+                case lastTime -> row.getLastTime();
+                case role -> row.getMembership();
+                case groups -> row;
+                case online -> getChatLink(row);
+                case organization -> {
+                    OrganisationInfo organisationInfo = getOrganisationInfos(row);
+                    yield organisationInfo == null ? null : organisationInfo.getDisplayName();
+                }
+                case curriculumDisplayName -> {
+                    CurriculumElementInfos curriculumElementInfos = getCurriculumElementInfos(row);
+                    yield curriculumElementInfos == null ? null : curriculumElementInfos.getCurriculumDisplayName();
+                }
+                case rootCurriculumElementIdentifier -> {
+                    CurriculumElementInfos curriculumElementInfos = getCurriculumElementInfos(row);
+                    yield curriculumElementInfos == null ? null : curriculumElementInfos.getRootElementIdentifier();
+                }
+                case rootCurriculumElementDisplayName -> {
+                    CurriculumElementInfos curriculumElementInfos = getCurriculumElementInfos(row);
+                    yield curriculumElementInfos == null ? null : curriculumElementInfos.getRootElementDisplayName();
+                }
+                case tools -> row.getToolsLink();
+                default -> "ERROR";
+            };
 		}
 		
 		int propPos = col - AbstractMemberListController.USER_PROPS_OFFSET;
@@ -137,9 +148,20 @@ public class MemberListTableModel extends DefaultFlexiTableDataModel<MemberRow> 
 		}
 		return null;
 	}
-	
+
+	private OrganisationInfo getOrganisationInfos(MemberRow row) {
+		if (organizationInfos == null) {
+			return null;
+		}
+		return organizationInfos.get(row.getIdentityKey());
+	}
+
 	public void setCurriculumInfos(Map<Long,CurriculumMemberInfos> curriculumInfos) {
 		this.curriculumInfos = curriculumInfos;
+	}
+
+	public void setOrganizationInfos(Map<Long, OrganisationInfo> organizationInfos) {
+		this.organizationInfos = organizationInfos;
 	}
 
 	public enum Cols implements FlexiSortableColumnDef {
@@ -149,6 +171,7 @@ public class MemberListTableModel extends DefaultFlexiTableDataModel<MemberRow> 
 		groups("table.header.groups"),
 		online("table.header.online"),
 		tools("action.more"),
+		organization("table.header.organization"),
 		curriculumDisplayName("table.header.curriculum"),
 		rootCurriculumElementIdentifier("table.header.curriculum.root.identifier"),
 		rootCurriculumElementDisplayName("table.header.curriculum.root.displayname"),

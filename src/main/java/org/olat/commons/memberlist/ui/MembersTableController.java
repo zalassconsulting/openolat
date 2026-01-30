@@ -29,7 +29,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.olat.NewControllerFactory;
 import org.olat.basesecurity.BaseSecurity;
+import org.olat.basesecurity.OrganisationService;
 import org.olat.commons.memberlist.model.CurriculumMemberInfos;
+import org.olat.commons.memberlist.model.OrganisationInfo;
 import org.olat.core.commons.persistence.SortKey;
 import org.olat.core.gui.UserRequest;
 import org.olat.core.gui.components.form.flexible.FormItem;
@@ -54,6 +56,7 @@ import org.olat.core.gui.control.generic.closablewrapper.CloseableModalControlle
 import org.olat.core.gui.translator.Translator;
 import org.olat.core.helpers.Settings;
 import org.olat.core.id.Identity;
+import org.olat.core.id.Organisation;
 import org.olat.core.id.UserConstants;
 import org.olat.core.id.context.BusinessControl;
 import org.olat.core.id.context.BusinessControlFactory;
@@ -100,6 +103,7 @@ public class MembersTableController extends FormBasicController {
 	private final RepositoryEntry repoEntry; 
 	private Set<MemberRow> duplicateCatcher;
 	private final Map<Long,CurriculumMemberInfos> curriculumInfos;
+	private final Map<Long, OrganisationInfo> organizationInfos;
 	private BusinessGroup businessGroup;
 	private CourseEnvironment courseEnv;
 	private int pageSize = 20;
@@ -117,9 +121,10 @@ public class MembersTableController extends FormBasicController {
 	private UserPortraitService userPortraitService;
 	
 	public MembersTableController(UserRequest ureq, WindowControl wControl, List<Identity> members, Set<MemberRow> duplicateCatcher,
-			Map<Long,Date> recentLaunches, Map<Long,Date> initialLaunches, Map<Long,CurriculumMemberInfos> curriculumInfos,
-			List<UserPropertyHandler> userPropertyHandlers, Map<Long,BusinessGroupMembership> groupmemberships, RepositoryEntry repoEntry, BusinessGroup businessGroup, 
-			CourseEnvironment courseEnv, boolean deduplicateList, Translator translator, boolean editable, boolean canEmail, boolean userLastTimeVisible) {
+								  Map<Long,Date> recentLaunches, Map<Long,Date> initialLaunches, Map<Long,CurriculumMemberInfos> curriculumInfos,
+								  List<UserPropertyHandler> userPropertyHandlers, Map<Long,BusinessGroupMembership> groupmemberships, RepositoryEntry repoEntry, BusinessGroup businessGroup,
+								  CourseEnvironment courseEnv, boolean deduplicateList, Translator translator, boolean editable, boolean canEmail, boolean userLastTimeVisible,
+								  Map<Long, OrganisationInfo> organizationInfos) {
 		super(ureq, wControl, "table");
 		setTranslator(translator);
 		
@@ -136,6 +141,7 @@ public class MembersTableController extends FormBasicController {
 		this.businessGroup = businessGroup;
 		this.courseEnv = courseEnv;
 		this.curriculumInfos = curriculumInfos;
+		this.organizationInfos = organizationInfos;
 		
 		membersList = getMembersFromIdentity(members, groupmemberships, recentLaunches, initialLaunches);
 		curriculum = curriculumInfos != null && !curriculumInfos.isEmpty();
@@ -151,6 +157,7 @@ public class MembersTableController extends FormBasicController {
 		membersModel = new MemberListTableModel(columnsModel, getLocale(), imModule.isOnlineStatusEnabled());
 		membersModel.setObjects(membersList);
 		membersModel.setCurriculumInfos(curriculumInfos);
+		membersModel.setOrganizationInfos(organizationInfos);
 		membersTable = uifactory.addTableElement(getWindowControl(), "table", membersModel, pageSize, false, getTranslator(), formLayout);
 		membersTable.setEmptyTableSettings("nomembers", null, "o_icon_user");
 		membersTable.setAndLoadPersistedPreferences(ureq, this.getClass().getSimpleName());

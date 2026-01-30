@@ -23,8 +23,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.olat.basesecurity.OrganisationModule;
 import org.olat.commons.memberlist.manager.MembersExportManager;
+import org.olat.commons.memberlist.manager.OrganisationQueryManager;
 import org.olat.commons.memberlist.model.CurriculumMemberInfos;
+import org.olat.commons.memberlist.model.OrganisationInfo;
 import org.olat.commons.memberlist.ui.MembersDisplayRunController;
 import org.olat.core.gui.UserRequest;
 import org.olat.core.gui.components.Component;
@@ -53,7 +56,11 @@ private MembersDisplayRunController membersDisplayRunController;
 	@Autowired
 	private CurriculumModule curriculumModule;
 	@Autowired
+	private OrganisationModule organisationModule;
+	@Autowired
 	private MembersExportManager exportManager;
+	@Autowired
+	private OrganisationQueryManager organisationQueryManager;
 	
 	public MembersToolRunController(UserRequest ureq, WindowControl wControl, UserCourseEnvironment userCourseEnv) {
 		super(ureq, wControl);
@@ -70,6 +77,12 @@ private MembersDisplayRunController membersDisplayRunController;
 		if(curriculumModule.isEnabled()) {
 			curriculumInfos = exportManager.getCurriculumMemberInfos(courseRepositoryEntry);
 		}
+
+		Map<Long, OrganisationInfo> organisationInfos = null;
+		if(organisationModule.isEnabled()) {
+			organisationInfos = organisationQueryManager.getOrganisationInfos(participants);
+		}
+
 		
 		boolean canEmail = true;
 		boolean canDownload = false;
@@ -81,7 +94,7 @@ private MembersDisplayRunController membersDisplayRunController;
 		boolean editable = true;
 		membersDisplayRunController = new MembersDisplayRunController(ureq, wControl, getTranslator(), userCourseEnv,
 				null, owners, coaches, participants, waiting, curriculumInfos, canEmail, canDownload, deduplicateList,
-				showOwners, showCoaches, showParticipants, showWaiting, editable);
+				showOwners, showCoaches, showParticipants, showWaiting, editable, organisationInfos);
 		listenTo(membersDisplayRunController);
 		
 		putInitialPanel(membersDisplayRunController.getInitialComponent());

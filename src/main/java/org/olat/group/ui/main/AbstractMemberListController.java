@@ -19,21 +19,15 @@
  */
 package org.olat.group.ui.main;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
-import org.olat.basesecurity.BaseSecurity;
-import org.olat.basesecurity.BaseSecurityModule;
-import org.olat.basesecurity.GroupRoles;
-import org.olat.basesecurity.OrganisationRoles;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import org.olat.basesecurity.*;
+import org.olat.commons.memberlist.manager.OrganisationQueryManager;
+import org.olat.commons.memberlist.model.OrganisationInfo;
 import org.olat.core.CoreSpringFactory;
 import org.olat.core.commons.persistence.DBFactory;
 import org.olat.core.commons.persistence.SortKey;
@@ -106,6 +100,7 @@ import org.olat.group.BusinessGroupService;
 import org.olat.group.BusinessGroupShort;
 import org.olat.group.manager.MemberViewQueries;
 import org.olat.group.model.BusinessGroupMembershipChange;
+import org.olat.group.model.IdentityMemberView;
 import org.olat.group.model.MemberView;
 import org.olat.group.ui.main.MemberListTableModel.Cols;
 import org.olat.group.ui.main.SearchMembersParams.Origin;
@@ -129,6 +124,7 @@ import org.olat.repository.model.RepositoryEntryPermissionChangeEvent;
 import org.olat.resource.accesscontrol.ACService;
 import org.olat.user.UserInfoMainController;
 import org.olat.user.UserManager;
+import org.olat.user.UserPropertiesRow;
 import org.olat.user.propertyhandlers.UserPropertyHandler;
 import org.olat.user.ui.admin.IdentityStatusCellRenderer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -215,6 +211,10 @@ public abstract class AbstractMemberListController extends FormBasicController i
 	private InstantMessagingService imService;
 	@Autowired
 	private UserSessionManager sessionManager;
+	@Autowired
+	private OrganisationModule organisationModule;
+	@Autowired
+	OrganisationQueryManager organisationQueryMgr;
 
 	public AbstractMemberListController(UserRequest ureq, WindowControl wControl, RepositoryEntry repoEntry,
 			String page, MemberListSecurityCallback secCallback,  TooledStackedPanel stackPanel) {
@@ -477,6 +477,8 @@ public abstract class AbstractMemberListController extends FormBasicController i
 			GroupCellRenderer groupRenderer = new GroupCellRenderer();
 			columnsModel.addFlexiColumnModel(new DefaultFlexiColumnModel(Cols.groups, groupRenderer));
 		}
+
+		columnsModel.addFlexiColumnModel(new DefaultFlexiColumnModel(Cols.organization));
 		
 		columnsModel.addFlexiColumnModel(new ActionsColumnModel(Cols.tools));
 		return defaultSortKey;
@@ -1100,6 +1102,13 @@ public abstract class AbstractMemberListController extends FormBasicController i
 		}
 
 		memberListModel.setObjects(memberList);
+		if (organisationModule.isEnabled()) {
+			List<IdentityRef> identities = memberViews.stream().filter(
+					mv -> mv instanceof IdentityMemberView
+			).map(mv -> ((IdentityMemberView)mv).getIdentityRef()).toList();
+			Map<Long, OrganisationInfo> organisationInfos = organisationQueryMgr.getOrganisationInfos(identities);
+			memberListModel.setOrganizationInfos(organisationInfos);
+		}
 		membersTable.reset(true, true, true);
 	}
 

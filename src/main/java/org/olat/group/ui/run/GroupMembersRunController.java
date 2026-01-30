@@ -71,7 +71,7 @@ public class GroupMembersRunController extends BasicController {
 		}
 		boolean canDownload = businessGroup.isDownloadMembersLists();
 		membersDisplayRunController = new MembersDisplayRunController(ureq, wControl, getTranslator(), null, businessGroup, new ArrayList<>(), 
-				coaches, participants, waiting, null, canEmail, canDownload, false, false, showCoaches, showParticipants, showWaiting, !readOnly);
+				coaches, participants, waiting, null, canEmail, canDownload, false, false, showCoaches, showParticipants, showWaiting, !readOnly, Collections.emptyMap());
 		listenTo(membersDisplayRunController);
 		
 		putInitialPanel(membersDisplayRunController.getInitialComponent());		

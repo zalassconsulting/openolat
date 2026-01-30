@@ -25,8 +25,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.olat.basesecurity.BaseSecurity;
+import org.olat.basesecurity.OrganisationModule;
 import org.olat.commons.memberlist.manager.MembersExportManager;
+import org.olat.commons.memberlist.manager.OrganisationQueryManager;
 import org.olat.commons.memberlist.model.CurriculumMemberInfos;
+import org.olat.commons.memberlist.model.OrganisationInfo;
 import org.olat.commons.memberlist.ui.MembersDisplayRunController;
 import org.olat.core.gui.UserRequest;
 import org.olat.core.gui.components.Component;
@@ -65,6 +68,10 @@ public class MembersCourseNodeRunController extends BasicController {
 	private CurriculumModule curriculumModule;
 	@Autowired
 	private MembersExportManager exportManager;
+	@Autowired
+	private OrganisationModule organisationModule;
+	@Autowired
+	private OrganisationQueryManager organisationQueryManager;
 	
 	public MembersCourseNodeRunController(UserRequest ureq, WindowControl wControl, UserCourseEnvironment userCourseEnv, ModuleConfiguration config) {
 		super(ureq, wControl);
@@ -116,10 +123,15 @@ public class MembersCourseNodeRunController extends BasicController {
 		if(curriculumModule.isEnabled()) {
 			curriculumInfos = exportManager.getCurriculumMemberInfos(courseRepositoryEntry);
 		}
+
+		Map<Long, OrganisationInfo> organisationInfos = null;
+		if(organisationModule.isEnabled()) {
+			organisationInfos = organisationQueryManager.getOrganisationInfos(participants);
+		}
 		
 		membersDisplayRunController = new MembersDisplayRunController(ureq, wControl, getTranslator(), userCourseEnv, null,
 				owners, coaches, participants, new ArrayList<>(), curriculumInfos, canEmail, canDownload, deduplicateList,
-				showOwners, showCoaches, showParticipants, false, true);
+				showOwners, showCoaches, showParticipants, false, true, organisationInfos);
 		listenTo(membersDisplayRunController);
 		
 		putInitialPanel(membersDisplayRunController.getInitialComponent());

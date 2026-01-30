@@ -31,6 +31,7 @@ import java.util.Set;
 import org.olat.basesecurity.BaseSecurityModule;
 import org.olat.commons.memberlist.manager.MembersExportManager;
 import org.olat.commons.memberlist.model.CurriculumMemberInfos;
+import org.olat.commons.memberlist.model.OrganisationInfo;
 import org.olat.commons.memberlist.ui.MembersAvatarDisplayRunController.IdentityComparator;
 import org.olat.core.commons.fullWebApp.popup.BaseFullWebappPopupLayoutFactory;
 import org.olat.core.gui.UserRequest;
@@ -92,6 +93,7 @@ public class MembersListDisplayRunController extends BasicController {
 	private List<Identity> participants;
 	private List<Identity> waiting;
 	private Map<Long,CurriculumMemberInfos> curriculumInfos;
+	private Map<Long,OrganisationInfo> organisationInfos;
 
 	private final boolean showOwners;
 	private final boolean showCoaches;
@@ -125,8 +127,9 @@ public class MembersListDisplayRunController extends BasicController {
 	private UserCourseInformationsManager userInfosMgr;
 
 	public MembersListDisplayRunController(UserRequest ureq, WindowControl wControl, Translator translator, UserCourseEnvironment userCourseEnv, BusinessGroup businessGroup,
-			List<Identity> owners, List<Identity> coaches, List<Identity> participants, List<Identity> waiting, Map<Long,CurriculumMemberInfos> curriculumInfos,
-			boolean canEmail, boolean canDownload, boolean deduplicateList, boolean showOwners, boolean showCoaches, boolean showParticipants, boolean showWaiting, boolean editable) {
+										   List<Identity> owners, List<Identity> coaches, List<Identity> participants, List<Identity> waiting, Map<Long,CurriculumMemberInfos> curriculumInfos,
+										   boolean canEmail, boolean canDownload, boolean deduplicateList, boolean showOwners, boolean showCoaches, boolean showParticipants, boolean showWaiting, boolean editable,
+										   Map<Long, OrganisationInfo> organisationInfos) {
 		super(ureq, wControl);
 		Translator fallback = userManager.getPropertyHandlerTranslator(getTranslator());
 		setTranslator(Util.createPackageTranslator(translator, fallback, getLocale()));
@@ -137,6 +140,7 @@ public class MembersListDisplayRunController extends BasicController {
 		courseEnv = userCourseEnv == null ? null : userCourseEnv.getCourseEnvironment();
 		this.businessGroup = businessGroup;
 		this.curriculumInfos = curriculumInfos;
+		this.organisationInfos = organisationInfos;
 		repoEntry = courseEnv != null ? courseEnv.getCourseGroupManager().getCourseEntry() : null;
 
 		Roles roles = ureq.getUserSession().getRoles();
@@ -187,28 +191,28 @@ public class MembersListDisplayRunController extends BasicController {
 		if (showOwners && !owners.isEmpty()) {
 			ownersTableCtrl = new MembersTableController(ureq, wControl, owners, duplicateCatcher, recentLaunches, initialLaunches, curriculumInfos,
 					userPropertyHandlers, groupmemberships,	repoEntry, businessGroup, courseEnv,
-					deduplicateList, getTranslator(), editable, canEmail, userLastTimeVisible);
+					deduplicateList, getTranslator(), editable, canEmail, userLastTimeVisible, organisationInfos);
 			listenTo(ownersTableCtrl);
 			mainVC.put("ownerList", ownersTableCtrl.getInitialComponent());
 		}
 		if (showCoaches && !coaches.isEmpty()) {
 			coachesTableCtrl = new MembersTableController(ureq, wControl, coaches, duplicateCatcher, recentLaunches, initialLaunches, curriculumInfos,
 					userPropertyHandlers, groupmemberships, repoEntry, businessGroup, courseEnv,
-					deduplicateList, getTranslator(), editable, canEmail, userLastTimeVisible);
+					deduplicateList, getTranslator(), editable, canEmail, userLastTimeVisible, organisationInfos);
 			listenTo(coachesTableCtrl);
 			mainVC.put("coachList", coachesTableCtrl.getInitialComponent());
 		}
 		if (showParticipants && !participants.isEmpty()) {
 			participantsTableCtrl = new MembersTableController(ureq, wControl, participants, duplicateCatcher, recentLaunches, initialLaunches, curriculumInfos,
 					userPropertyHandlers, groupmemberships,	repoEntry, businessGroup, courseEnv,
-					deduplicateList, getTranslator(), editable, canEmail, userLastTimeVisible);
+					deduplicateList, getTranslator(), editable, canEmail, userLastTimeVisible, organisationInfos);
 			listenTo(participantsTableCtrl);
 			mainVC.put("participantList", participantsTableCtrl.getInitialComponent());
 		}
 		if (showWaiting && !waiting.isEmpty()) {
 			waitingTableCtrl = new MembersTableController(ureq, wControl, waiting, duplicateCatcher, recentLaunches, initialLaunches, curriculumInfos,
 					userPropertyHandlers, groupmemberships, repoEntry, businessGroup, courseEnv,
-					deduplicateList, getTranslator(), editable, canEmail, userLastTimeVisible);
+					deduplicateList, getTranslator(), editable, canEmail, userLastTimeVisible, organisationInfos);
 			listenTo(waitingTableCtrl);
 			mainVC.put("waitingList", waitingTableCtrl.getInitialComponent());
 		}
