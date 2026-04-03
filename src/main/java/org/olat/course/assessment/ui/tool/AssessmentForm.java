@@ -25,6 +25,7 @@
 
 package org.olat.course.assessment.ui.tool;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -105,6 +106,18 @@ import org.olat.repository.RepositoryEntry;
 import org.olat.user.UserManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.HttpClientBuilder;
+
+import org.olat.course.assessment.ui.tool.SmpCustomEvaluationFormUploadController;
+import org.olat.course.assessment.ui.tool.SmpCustomEvaluationFormUploadResult;
+
 
 /**
  * Initial Date:  Jun 24, 2004
@@ -149,6 +162,8 @@ public class AssessmentForm extends FormBasicController {
 	private FormLink viewFormEvaluationLink;
 	private FormLink editFormEvaluationLink;
 	private FormLink reopenFormEvaluationLink;
+	private final SmpCustomEvaluationFormUploadController uploadController = new SmpCustomEvaluationFormUploadController();
+	private FileElement uploadFileEl;
 	private FormLayoutContainer scoreDetailsCont;
 
 	private Controller docEditorCtrl;
@@ -170,7 +185,7 @@ public class AssessmentForm extends FormBasicController {
 	private final UserCourseEnvironment assessedUserCourseEnv;
 	private final CourseNode courseNode;
 	private final Roles roles;
-	
+
 	private int counter = 0;
 
 	private Integer attemptsValue;
@@ -401,6 +416,22 @@ public class AssessmentForm extends FormBasicController {
 					.setResultingMediaResource(new DownloadeableVFSMediaResource(wrapper.getDocument()));
 			} else if("open".equals(link.getCmd())) {
 				doOpenDocument(ureq, wrapper);
+			}
+		} else if (source == uploadFileEl) {
+			File file = uploadFileEl.getUploadFile();
+			String fileName = uploadFileEl.getUploadFileName();
+			Long fkSession = (Long) uploadFileEl.getUserObject();
+
+			if (file != null && StringHelper.containsNonWhitespace(fileName)) {
+				SmpCustomEvaluationFormUploadResult result = uploadController.sendEvaluationFile(file, fileName, fkSession);
+				if (result.isSuccess()) {
+					log.info("Upload OK file={}, fkSession={}, msg={}", fileName, fkSession, result.getMessage());
+					showInfo("Upload OK: " + result.getMessage());
+				} else {
+					log.warn("Upload FAIL file={}, fkSession={}, status={}, msg={}", fileName, fkSession, result.getStatus(), result.getMessage());
+					showError("Upload failed (" + result.getStatus() + "): " + result.getMessage());
+				}
+				uploadFileEl.reset();
 			}
 		}
 		super.formInnerEvent(ureq, source, event);
@@ -768,11 +799,16 @@ public class AssessmentForm extends FormBasicController {
 			FormLayoutContainer buttonsCont = uifactory.addInlineFormLayout("form.evalutation.buttons", null, formEvaluationCont);
 			editFormEvaluationLink = uifactory.addFormLink("form.evaluation.edit", buttonsCont, Link.BUTTON);
 			reopenFormEvaluationLink = uifactory.addFormLink("form.evaluation.reopen", buttonsCont, Link.BUTTON);
-			
 			viewFormEvaluationLink = uifactory.addFormLink("form.evaluation.open", buttonsCont, Link.BUTTON);
 			viewFormEvaluationLink.setGhost(true);
+			Identity assessedIdentity = assessedUserCourseEnv.getIdentityEnvironment().getIdentity();
+			RepositoryEntry courseEntry = assessedUserCourseEnv.getCourseEnvironment().getCourseGroupManager().getCourseEntry();
+			EvaluationFormSession session = courseAssessmentService.getSession(courseEntry, courseNode, assessedIdentity);
+			Long fkSession = session.getKey();
+			uploadFileEl = uifactory.addFileElement(getWindowControl(), getIdentity(), "form.upload", null, formEvaluationCont);
+			uploadFileEl.addActionListener(FormEvent.ONCHANGE);
+			uploadFileEl.setUserObject(fkSession);
 		}
-		
 		FormLayoutContainer assessmentCont = uifactory.addDefaultFormLayout("assessment", null, formLayout);
 		assessmentCont.setElementCssClass("o_sel_assessment_form");
 		assessmentCont.setFormTitle(translate("personal.title"));
