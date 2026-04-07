@@ -17,7 +17,6 @@ public class RemoteFileMediaResource implements MediaResource {
         this.downloadName = downloadName;
         this.contentType = contentType;
 
-        // pobranie pliku z Quarkus
         URL url = new URL(urlString);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
