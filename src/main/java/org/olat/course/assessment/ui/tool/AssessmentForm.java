@@ -25,15 +25,7 @@
 
 package org.olat.course.assessment.ui.tool;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.NavigableSet;
-
 import jakarta.servlet.http.HttpServletRequest;
-
 import org.apache.logging.log4j.Logger;
 import org.olat.core.commons.services.doceditor.DocEditor;
 import org.olat.core.commons.services.doceditor.DocEditorConfigs;
@@ -46,12 +38,7 @@ import org.olat.core.gui.components.dropdown.DropdownItem;
 import org.olat.core.gui.components.dropdown.DropdownOrientation;
 import org.olat.core.gui.components.form.flexible.FormItem;
 import org.olat.core.gui.components.form.flexible.FormItemContainer;
-import org.olat.core.gui.components.form.flexible.elements.FileElement;
-import org.olat.core.gui.components.form.flexible.elements.FormLink;
-import org.olat.core.gui.components.form.flexible.elements.IntegerElement;
-import org.olat.core.gui.components.form.flexible.elements.SingleSelection;
-import org.olat.core.gui.components.form.flexible.elements.StaticTextElement;
-import org.olat.core.gui.components.form.flexible.elements.TextElement;
+import org.olat.core.gui.components.form.flexible.elements.*;
 import org.olat.core.gui.components.form.flexible.impl.FormBasicController;
 import org.olat.core.gui.components.form.flexible.impl.FormEvent;
 import org.olat.core.gui.components.form.flexible.impl.FormLayoutContainer;
@@ -95,15 +82,15 @@ import org.olat.modules.assessment.ui.event.AssessmentFormEvent;
 import org.olat.modules.forms.EvaluationFormSession;
 import org.olat.modules.forms.EvaluationFormSessionStatus;
 import org.olat.modules.forms.ui.ProgressEvent;
-import org.olat.modules.grade.GradeModule;
-import org.olat.modules.grade.GradeScale;
-import org.olat.modules.grade.GradeScoreRange;
-import org.olat.modules.grade.GradeService;
-import org.olat.modules.grade.GradeSystem;
+import org.olat.modules.grade.*;
 import org.olat.modules.grade.ui.GradeUIFactory;
 import org.olat.repository.RepositoryEntry;
 import org.olat.user.UserManager;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.io.File;
+import java.math.BigDecimal;
+import java.util.*;
 
 
 /**
@@ -149,6 +136,10 @@ public class AssessmentForm extends FormBasicController {
 	private FormLink viewFormEvaluationLink;
 	private FormLink editFormEvaluationLink;
 	private FormLink reopenFormEvaluationLink;
+	private FormLink downloadTemplateLink;
+	private FormLink downloadFormLink;
+	private final SmpCustomEvaluationFormUploadController uploadController = new SmpCustomEvaluationFormUploadController();
+	private FileElement uploadFileEl;
 	private FormLayoutContainer scoreDetailsCont;
 
 	private Controller docEditorCtrl;
@@ -170,7 +161,7 @@ public class AssessmentForm extends FormBasicController {
 	private final UserCourseEnvironment assessedUserCourseEnv;
 	private final CourseNode courseNode;
 	private final Roles roles;
-	
+
 	private int counter = 0;
 
 	private Integer attemptsValue;
@@ -358,6 +349,10 @@ public class AssessmentForm extends FormBasicController {
 
 	@Override
 	protected void formInnerEvent(UserRequest ureq, FormItem source, FormEvent event) {
+		Identity assessedIdentity = assessedUserCourseEnv.getIdentityEnvironment().getIdentity();
+		RepositoryEntry courseEntry = assessedUserCourseEnv.getCourseEnvironment().getCourseGroupManager().getCourseEntry();
+		EvaluationFormSession session = courseAssessmentService.getSession(courseEntry, courseNode, assessedIdentity);
+		Long fkSession = session.getKey();
 		if (source == score) {
 			updateGradeAndScaleUI();
 		} else if (source == gradeApplyLink) {
@@ -402,6 +397,29 @@ public class AssessmentForm extends FormBasicController {
 			} else if("open".equals(link.getCmd())) {
 				doOpenDocument(ureq, wrapper);
 			}
+		} else if (source == uploadFileEl) {
+			File file = uploadFileEl.getUploadFile();
+			String fileName = uploadFileEl.getUploadFileName();
+
+			if (file != null && StringHelper.containsNonWhitespace(fileName)) {
+				SmpCustomEvaluationFormUploadResult result = uploadController.sendEvaluationFile(file, fileName, fkSession);
+				if (result.isSuccess()) {
+					log.info("Upload OK file={}, fkSession={}, msg={}", fileName, fkSession, result.getMessage());
+					showInfo("Upload OK: " + result.getMessage());
+				} else {
+					log.warn("Upload FAIL file={}, fkSession={}, status={}, msg={}", fileName, fkSession, result.getStatus(), result.getMessage());
+					showError("Upload failed (" + result.getStatus() + "): " + result.getMessage());
+				}
+				uploadFileEl.reset();
+			}
+		} else if (source == downloadTemplateLink) {
+			uploadController.downloadTemplate(ureq);
+		} else if (source == downloadFormLink) {
+			String name = userManager
+					.getUserDisplayName(assessedUserCourseEnv.getIdentityEnvironment().getIdentity())
+					.replace(" ", "")
+					.replace(",", "-");
+			uploadController.downloadForm(ureq, fkSession, name);
 		}
 		super.formInnerEvent(ureq, source, event);
 	}
@@ -768,11 +786,23 @@ public class AssessmentForm extends FormBasicController {
 			FormLayoutContainer buttonsCont = uifactory.addInlineFormLayout("form.evalutation.buttons", null, formEvaluationCont);
 			editFormEvaluationLink = uifactory.addFormLink("form.evaluation.edit", buttonsCont, Link.BUTTON);
 			reopenFormEvaluationLink = uifactory.addFormLink("form.evaluation.reopen", buttonsCont, Link.BUTTON);
-			
 			viewFormEvaluationLink = uifactory.addFormLink("form.evaluation.open", buttonsCont, Link.BUTTON);
+			downloadTemplateLink = uifactory.addFormLink(
+					"form.evaluation.download.template",
+					buttonsCont,
+					Link.LINK
+			);
+			downloadTemplateLink.setElementCssClass("btn btn-default form");
+			downloadFormLink = uifactory.addFormLink(
+					"form.evaluation.download.form",
+					buttonsCont,
+					Link.LINK
+			);
+			downloadFormLink.setElementCssClass("btn btn-default form");
 			viewFormEvaluationLink.setGhost(true);
+			uploadFileEl = uifactory.addFileElement(getWindowControl(), getIdentity(), "form.upload", null, formEvaluationCont);
+			uploadFileEl.addActionListener(FormEvent.ONCHANGE);
 		}
-		
 		FormLayoutContainer assessmentCont = uifactory.addDefaultFormLayout("assessment", null, formLayout);
 		assessmentCont.setElementCssClass("o_sel_assessment_form");
 		assessmentCont.setFormTitle(translate("personal.title"));
