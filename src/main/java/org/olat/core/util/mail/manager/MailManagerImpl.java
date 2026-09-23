@@ -895,8 +895,10 @@ public class MailManagerImpl implements MailManager, InitializingBean  {
 		
 		List<DBMailAttachment> attachments = getAttachments(mail);
 
-		Address to = createAddress(identity, result, true);
-		MimeMessage message = createForwardMimeMessage(to, to, mail.getSubject(), mail.getBody(), attachments, result);
+		List<Address> toList = createAddresses(identity, result, true);
+		Address[] to = (toList == null) ? new Address[0] : toList.toArray(new Address[0]);
+		Address from = (to.length > 0) ? to[0] : null;
+		MimeMessage message = createForwardMimeMessage(from, to, mail.getSubject(), mail.getBody(), attachments, result);
 		if(message != null) {
 			sendMessage(message, result);
 		}
@@ -1343,7 +1345,10 @@ public class MailManagerImpl implements MailManager, InitializingBean  {
 
 			List<Address> toList = new ArrayList<>();
 			if(StringHelper.containsNonWhitespace(to)) {
-				Address[] toAddresses = InternetAddress.parse(to);
+				// a recipient string may hold several semicolon-separated addresses
+				// (e.g. a personal address plus shared/CC mailboxes); normalize the
+				// separator so InternetAddress parses them all instead of failing
+				Address[] toAddresses = InternetAddress.parse(to.replace(';', ','));
 				for(Address toAddress:toAddresses) {
 					toList.add(toAddress);
 				}
@@ -1356,9 +1361,9 @@ public class MailManagerImpl implements MailManager, InitializingBean  {
 			
 			List<Address> ccList = new ArrayList<>();
 			if(ccId != null) {
-				Address ccAddress = createAddress(ccId, result, true);
-				if(ccAddress != null) {
-					ccList.add(ccAddress);
+				List<Address> ccAddresses = createAddresses(ccId, result, true);
+				if(ccAddresses != null) {
+					ccList.addAll(ccAddresses);
 				}
 			}
 			
@@ -1495,34 +1500,6 @@ public class MailManagerImpl implements MailManager, InitializingBean  {
 		return false;
 	}
 	
-	private Address createAddress(Identity recipient, MailerResult result, boolean error) {
-		if(recipient != null) {
-			if(recipient.getStatus() == Identity.STATUS_LOGIN_DENIED) {
-				result.addFailedIdentites(recipient);
-			} else {
-				String emailAddress = recipient.getUser().getProperty(UserConstants.EMAIL, null);
-				if(!StringHelper.containsNonWhitespace(emailAddress)) return null;
-				Address address;
-				try {
-					address = createAddress(emailAddress);
-					if(address == null) {
-						result.addFailedIdentites(recipient);
-						if(error) {
-							result.setReturnCode(MailerResult.RECIPIENT_ADDRESS_ERROR);
-						}
-					}
-					return address;
-				} catch (AddressException e) {
-					result.addFailedIdentites(recipient);
-					if(error) {
-						result.setReturnCode(MailerResult.RECIPIENT_ADDRESS_ERROR);
-					}
-				}
-			}
-		}
-		return null;
-	}
-
 	private List<Address> createAddresses(Identity recipient, MailerResult result, boolean error) {
 		if(recipient != null) {
 			if(recipient.getStatus() == Identity.STATUS_LOGIN_DENIED) {
@@ -1532,18 +1509,22 @@ public class MailManagerImpl implements MailManager, InitializingBean  {
 				List<Address> addresses = new ArrayList<>();
 				if(!StringHelper.containsNonWhitespace(emailAddress)) return null;
 				String[] ads = emailAddress.split(";");
-				if(ads.length == 0) { ads = new String[1]; ads[0] = emailAddress; }
 				for(int i = 0; i < ads.length;i++) {
+					String ad = ads[i] == null ? null : ads[i].trim();
+					if(!StringHelper.containsNonWhitespace(ad)) {
+						continue;
+					}
 					Address address;
 					try {
-						address = createAddress(ads[i]);
+						address = createAddress(ad);
 						if(address == null) {
 							result.addFailedIdentites(recipient);
 							if(error) {
 								result.setReturnCode(MailerResult.RECIPIENT_ADDRESS_ERROR);
 							}
+						} else {
+							addresses.add(address);
 						}
-						addresses.add(address);
 					} catch (AddressException e) {
 						result.addFailedIdentites(recipient);
 						if(error) {
@@ -1608,13 +1589,17 @@ public class MailManagerImpl implements MailManager, InitializingBean  {
 		sendMessage(msg, result);
 	}
 	
-	private MimeMessage createForwardMimeMessage(Address from, Address to, String subject, String body,
+	private MimeMessage createForwardMimeMessage(Address from, Address[] to, String subject, String body,
 			List<DBMailAttachment> attachments, MailerResult result) {
-		
+
 		try {
 			MimeMessage msg = createMessage(subject, from);
 			if(to != null) {
-				msg.addRecipient(RecipientType.TO, to);
+				for(Address recipient:to) {
+					if(recipient != null) {
+						msg.addRecipient(RecipientType.TO, recipient);
+					}
+				}
 			}
 
 			if (attachments != null && !attachments.isEmpty()) {

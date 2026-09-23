@@ -282,7 +282,9 @@ public class MailValidationController extends FormBasicController {
 
 		try {
 			MailBundle bundle = new MailBundle();
-			bundle.setTo(email);
+			// the OTP / verification message proves control of the primary address,
+			// so it is sent to the first address only, not the shared/CC ones
+			bundle.setTo(MailHelper.getFirstEmailAddress(email));
 			bundle.setContent(subject, body);
 			boolean htmlBody = StringHelper.isHtml(body);
 			MailerResult result = mailManager.sendExternMessage(bundle, null, htmlBody);
@@ -342,13 +344,15 @@ public class MailValidationController extends FormBasicController {
 		mailEl.clearError();
 		if (mailEl.isEmpty("email.address.maynotbeempty")) {
 			allOk = false;
-		} else if (!MailHelper.isValidEmailAddress(getEmailAddress())) {
+		} else if (!MailHelper.areValidEmailAddresses(getEmailAddress())) {
+			// the value may contain several semicolon-separated addresses
 			mailEl.setErrorKey("email.address.notregular");
 			allOk = false;
 		} else if (!isUserManager){
-			String val = getEmailAddress();
+			// only the first (primary) address is subject to the domain whitelist
+			String primary = MailHelper.getFirstEmailAddress(getEmailAddress());
 
-			boolean valid = registrationManager.validateEmailUsername(val);
+			boolean valid = registrationManager.validateEmailUsername(primary);
 			if(!valid) {
 				mailEl.setErrorKey("form.mail.whitelist.error");
 			}
@@ -359,7 +363,8 @@ public class MailValidationController extends FormBasicController {
 	}
 
 	public boolean isDomainAllowed() {
-		String mailDomain = MailHelper.getMailDomain(getEmailAddress());
+		// only the first (primary) address determines the mail domain
+		String mailDomain = MailHelper.getMailDomain(MailHelper.getFirstEmailAddress(getEmailAddress()));
 		if (organisationModule.isEnabled() && organisationModule.isEmailDomainEnabled()) {
 			OrganisationEmailDomainSearchParams searchParams = new OrganisationEmailDomainSearchParams();
 			searchParams.setEnabled(true);
