@@ -36,7 +36,6 @@ import org.olat.core.id.Identity;
 import org.olat.core.id.User;
 import org.olat.core.util.StringHelper;
 import org.olat.core.util.mail.MailHelper;
-import org.olat.user.UserManager;
 
 /**
  * <h3>Description:</h3>
@@ -126,20 +125,18 @@ public class EmailProperty extends Generic127CharTextPropertyHandler {
 
 		if (StringHelper.containsNonWhitespace(value)) {
 			value = value.toLowerCase().trim();
-			// check mail address syntax
-			if (!MailHelper.isValidEmailAddress(value)) {
+			// the value may contain several semicolon-separated addresses.
+			// Only the syntax of each address is validated. Uniqueness is deliberately
+			// NOT enforced here: in this deployment an email is a (possibly shared)
+			// delivery mailbox, not an identity key, so several users legitimately
+			// share the same address.
+			if (!MailHelper.areValidEmailAddresses(value)) {
 				textElement.setErrorKey(i18nFormElementLabelKey() + ".error.valid");
-				return false;
-			}
-			// email is syntactically correct. 
-		  // Check whether it's available.
-			if (!isAddressAvailable(value, user)) {
-				textElement.setErrorKey(i18nFormElementLabelKey() + ".error.exists", value);
 				return false;
 			}
 		}
 		// all checks successful
-		return true; 
+		return true;
 	}
 
 	/**
@@ -154,8 +151,8 @@ public class EmailProperty extends Generic127CharTextPropertyHandler {
 
 		if (StringHelper.containsNonWhitespace(value)) {
 			value = value.toLowerCase().trim();
-			// check mail address syntax
-			if ( ! MailHelper.isValidEmailAddress(value)) {
+			// the value may contain several semicolon-separated addresses
+			if (!MailHelper.areValidEmailAddresses(value)) {
 				validationError.setErrorKey(i18nFormElementLabelKey() + ".error.valid");
 				return false;
 			}
@@ -164,9 +161,5 @@ public class EmailProperty extends Generic127CharTextPropertyHandler {
 		// at this point we don't know if the email is mandatory - this must be
 		// checked outside this method. empty email is valid here
 		return true;
-	}
-	
-	private boolean isAddressAvailable(String emailAddress, User user) {
-		return UserManager.getInstance().isEmailAllowed(emailAddress, user);
 	}
 }

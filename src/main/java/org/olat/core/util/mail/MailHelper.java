@@ -330,7 +330,57 @@ public class MailHelper {
 	public static boolean isValidEmailAddress(String mailAddress) {
 		return EmailAddressValidator.isValidEmailAddress(mailAddress);
 	}
-	
+
+	/**
+	 * Checks a user email value that may hold several semicolon-separated
+	 * addresses (e.g. a personal address plus shared/CC mailboxes). Returns true
+	 * when the value contains at least one address and every non-blank
+	 * ';'-separated part is syntactically valid. Blank parts (e.g. a trailing
+	 * ';') are tolerated so the check stays consistent with how such values are
+	 * split for sending.
+	 *
+	 * @param value the raw field value, possibly semicolon-separated
+	 * @return true if all contained addresses are syntactically valid
+	 */
+	public static boolean areValidEmailAddresses(String value) {
+		if (!StringHelper.containsNonWhitespace(value)) {
+			return false;
+		}
+		boolean anyAddress = false;
+		for (String part : value.split(";")) {
+			part = part.trim();
+			if (part.isEmpty()) {
+				continue;
+			}
+			if (!isValidEmailAddress(part)) {
+				return false;
+			}
+			anyAddress = true;
+		}
+		return anyAddress;
+	}
+
+	/**
+	 * Returns the first (primary) address of a possibly semicolon-separated email
+	 * value. This is the login-/identity-relevant address; the remaining ones are
+	 * additional delivery targets.
+	 *
+	 * @param value the raw field value, possibly semicolon-separated
+	 * @return the first non-blank address, trimmed, or null if there is none
+	 */
+	public static String getFirstEmailAddress(String value) {
+		if (value == null) {
+			return null;
+		}
+		for (String part : value.split(";")) {
+			part = part.trim();
+			if (!part.isEmpty()) {
+				return part;
+			}
+		}
+		return null;
+	}
+
 	public static boolean isDisabledMailAddress(Identity identity, MailerResult result) {
 		String value = identity.getUser().getProperty("emailDisabled", null);
 		if (value != null && value.equals("true")) {

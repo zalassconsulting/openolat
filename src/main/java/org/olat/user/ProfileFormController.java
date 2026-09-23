@@ -474,8 +474,10 @@ public class ProfileFormController extends FormBasicController {
 		if (organisationModule.isEnabled()
 				&& organisationModule.isEmailDomainEnabled()
 				&& !isAllowedToModifyWithoutVerification()) {
-			String newDomain = MailHelper.getMailDomain(cme.getChangedEmail());
-			String currentDomain = MailHelper.getMailDomain(emailEl.getValue());
+			// a user email value may hold several semicolon-separated addresses;
+			// the organisation mapping is based on the first (primary) address
+			String newDomain = MailHelper.getMailDomain(MailHelper.getFirstEmailAddress(cme.getChangedEmail()));
+			String currentDomain = MailHelper.getMailDomain(MailHelper.getFirstEmailAddress(emailEl.getValue()));
 
 			if (newDomain.equals(currentDomain)) {
 				startChangeEmailWorkflow(ureq);
@@ -561,7 +563,7 @@ public class ProfileFormController extends FormBasicController {
 
 	private List<OrganisationEmailDomain> getMatchingMailDomains() {
 		OrganisationEmailDomainSearchParams searchParams = new OrganisationEmailDomainSearchParams();
-		String mailDomain = MailHelper.getMailDomain(changedEmail);
+		String mailDomain = MailHelper.getMailDomain(MailHelper.getFirstEmailAddress(changedEmail));
 		List<OrganisationEmailDomain> emailDomains = organisationService.getEmailDomains(searchParams);
 
 		roles = securityManager.getRoles(identityToModify);
