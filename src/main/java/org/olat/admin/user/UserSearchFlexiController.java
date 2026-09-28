@@ -252,9 +252,11 @@ public class UserSearchFlexiController extends FormBasicController {
 			String[] selectOptsFull = translateSearchOperators(AbstractUserPropertyHandler.optsValuesFull);
 			String[] selectOptsCnc = translateSearchOperators(AbstractUserPropertyHandler.optsValuesCnc);
 			FormItemContainer pcl = uifactory.addHorizontalFormLayout(String.valueOf(lid.getAndIncrement()),"search.form.login", searchFormContainer);
+			pcl.setElementCssClass("o_form_cell");
 			FormItem sdl = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pcl, AbstractUserPropertyHandler.optsValuesFull, selectOptsFull);
 			sdl.setElementCssClass("col-sm-2");
 			loginEl = uifactory.addTextElement("login", "", 128, "", pcl);
+			loginEl.setElementCssClass("col-sm-6");
 			loginEl.setVisible(isAdministrativeUser);
 			if(autofocus && loginEl.isVisible()) {
 				loginEl.setFocus(true);
@@ -333,6 +335,10 @@ public class UserSearchFlexiController extends FormBasicController {
 				ssd.setElementCssClass("col-sm-2");
 				FormItem fi = userPropertyHandler.addFormItem(getLocale(), null, UserSearchForm.class.getCanonicalName(), false, pc);
 				fi.setLabel("search.form.title.empty", null);
+				if(fi instanceof TextElement) {
+					// same gutter after the operator dropdown as the filter dropdowns
+					fi.setElementCssClass("col-sm-6");
+				}
 				if(autofocus && fi instanceof TextElement te) {
 					te.setFocus(true);
 					autofocus = false;
