@@ -223,7 +223,7 @@ public class MultiSelectionFilterElementImpl extends FormItemImpl implements Mul
 		selectionCtrl.addControllerListener(this);
 		
 		calloutCtrl = new CloseableCalloutWindowController(ureq, wControl, selectionCtrl.getInitialComponent(),
-				button.getFormDispatchId(), "", true, "", new CalloutSettings(false, CalloutOrientation.bottom, false, null));
+				button.getFormDispatchId(), "", true, "", new CalloutSettings(false, CalloutOrientation.bottomOrTop, false, null));
 		calloutCtrl.addControllerListener(this);
 		calloutCtrl.activate();
 	}

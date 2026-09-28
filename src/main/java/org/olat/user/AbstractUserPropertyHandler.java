@@ -53,9 +53,8 @@ public abstract class AbstractUserPropertyHandler implements UserPropertyHandler
 	private String group;
 	private String databaseColumnName;
 
-	public static final String[] selectOptsFull = {"Równa się", "Nie równa się", "Zawiera", "Nie zawiera"};
+	// search operator keys, labels are translated as search.form.op.<key> in org.olat.admin.user
 	public static final String[] optsValuesFull = {"E", "NE", "C", "NC"};
-	public static final String[] selectOptsCnc = {"Zawiera", "Nie zawiera"};
 	public static final String[] optsValuesCnc = {"C", "NC"};
 
 	/**

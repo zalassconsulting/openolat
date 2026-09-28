@@ -249,8 +249,10 @@ public class UserSearchFlexiController extends FormBasicController {
 			searchVariantForItem = new HashMap<>();
 
 			AtomicInteger lid = new AtomicInteger(1);
+			String[] selectOptsFull = translateSearchOperators(AbstractUserPropertyHandler.optsValuesFull);
+			String[] selectOptsCnc = translateSearchOperators(AbstractUserPropertyHandler.optsValuesCnc);
 			FormItemContainer pcl = uifactory.addHorizontalFormLayout(String.valueOf(lid.getAndIncrement()),"search.form.login", searchFormContainer);
-			FormItem sdl = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pcl, AbstractUserPropertyHandler.optsValuesFull, AbstractUserPropertyHandler.selectOptsFull);
+			FormItem sdl = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pcl, AbstractUserPropertyHandler.optsValuesFull, selectOptsFull);
 			sdl.setElementCssClass("col-sm-2");
 			loginEl = uifactory.addTextElement("login", "", 128, "", pcl);
 			loginEl.setVisible(isAdministrativeUser);
@@ -264,7 +266,7 @@ public class UserSearchFlexiController extends FormBasicController {
 			// dealer dropdown
 			FormItemContainer pco = uifactory.addHorizontalFormLayout(String.valueOf(lid.getAndIncrement()),"search.form.title.organisations", searchFormContainer);
 			pco.setElementCssClass("o_form_cell");
-			FormItem sdo = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pco, AbstractUserPropertyHandler.optsValuesCnc, AbstractUserPropertyHandler.selectOptsCnc);
+			FormItem sdo = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pco, AbstractUserPropertyHandler.optsValuesCnc, selectOptsCnc);
 			sdo.setElementCssClass("col-sm-2");
 			organisations = uifactory.addCheckboxesFilterDropdown("organisations", "",
 					pco, getWindowControl(), OrganisationUIFactory.createSelectionValues(organisationService.getOrganisations(getIdentity(), roles,
@@ -277,7 +279,7 @@ public class UserSearchFlexiController extends FormBasicController {
 			// course participant dropdown
 			FormItemContainer pcp = uifactory.addHorizontalFormLayout(String.valueOf(lid.getAndIncrement()),"search.form.title.entrolled", searchFormContainer);
 			pcp.setElementCssClass("o_form_cell");
-			FormItem sdp = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pcp, AbstractUserPropertyHandler.optsValuesCnc, AbstractUserPropertyHandler.selectOptsCnc);
+			FormItem sdp = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pcp, AbstractUserPropertyHandler.optsValuesCnc, selectOptsCnc);
 			sdp.setElementCssClass("col-sm-2");
 			searchableCourses = rDao.loadForMe(RepositoryEntryStatusEnum.published);
 			courses = uifactory.addCheckboxesFilterDropdown("courses", "", pcp, getWindowControl(),
@@ -289,7 +291,7 @@ public class UserSearchFlexiController extends FormBasicController {
 			// course finished dropdown
 			FormItemContainer pcf = uifactory.addHorizontalFormLayout(String.valueOf(lid.getAndIncrement()),"search.form.title.course.finished", searchFormContainer);
 			pcf.setElementCssClass("o_form_cell");
-			FormItem sdf = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pcf, AbstractUserPropertyHandler.optsValuesCnc, AbstractUserPropertyHandler.selectOptsCnc);
+			FormItem sdf = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pcf, AbstractUserPropertyHandler.optsValuesCnc, selectOptsCnc);
 			sdf.setElementCssClass("col-sm-2");
 			finished = uifactory.addCheckboxesFilterDropdown("finished", "", pcf, getWindowControl(),
 					OrganisationUIFactory.createCoursesSelectionValues(searchableCourses));
@@ -300,7 +302,7 @@ public class UserSearchFlexiController extends FormBasicController {
 			// ścieżki kariery dropdown
 			FormItemContainer pcs = uifactory.addHorizontalFormLayout(String.valueOf(lid.getAndIncrement()),"search.form.title.course.learnpath", searchFormContainer);
 			pcs.setElementCssClass("o_form_cell");
-			FormItem sds = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pcs, AbstractUserPropertyHandler.optsValuesCnc, AbstractUserPropertyHandler.selectOptsCnc);
+			FormItem sds = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pcs, AbstractUserPropertyHandler.optsValuesCnc, selectOptsCnc);
 			sds.setElementCssClass("col-sm-2");
 			CurriculumSearchParameters params = new CurriculumSearchParameters();
 			Collection<? extends CurriculumRef> l = curriculumService.getCurriculums(params).stream().map(e -> (CurriculumRef) e).collect(Collectors.toList());
@@ -324,9 +326,9 @@ public class UserSearchFlexiController extends FormBasicController {
 				pc.setElementCssClass("o_form_cell");
 				FormItem ssd;
 //				if(userPropertyHandler instanceof GenericSelectionPropertyHandler) {
-//					ssd = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pc, AbstractUserPropertyHandler.optsValuesCnc, AbstractUserPropertyHandler.selectOptsCnc);
+//					ssd = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pc, AbstractUserPropertyHandler.optsValuesCnc, selectOptsCnc);
 //				} else {
-					ssd = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pc, AbstractUserPropertyHandler.optsValuesFull, AbstractUserPropertyHandler.selectOptsFull);
+					ssd = uifactory.addDropdownSingleselect(String.valueOf(lid.getAndIncrement()), "", pc, AbstractUserPropertyHandler.optsValuesFull, selectOptsFull);
 //				}
 				ssd.setElementCssClass("col-sm-2");
 				FormItem fi = userPropertyHandler.addFormItem(getLocale(), null, UserSearchForm.class.getCanonicalName(), false, pc);
@@ -605,6 +607,14 @@ public class UserSearchFlexiController extends FormBasicController {
 		return selectedIdentities;
 	}
 	
+	private String[] translateSearchOperators(String[] operatorKeys) {
+		String[] labels = new String[operatorKeys.length];
+		for (int i = 0; i < operatorKeys.length; i++) {
+			labels[i] = translate("search.form.op." + operatorKeys[i]);
+		}
+		return labels;
+	}
+
 	private boolean hasSearchProperties() {
 		return StringHelper.containsNonWhitespace(loginEl.getValue())
 				|| collectSearchProperties() != null;
