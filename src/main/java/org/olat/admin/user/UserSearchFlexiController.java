@@ -701,6 +701,8 @@ public class UserSearchFlexiController extends FormBasicController {
 			String uiVariant = ((SingleSelection) varItem).getSelectedKey();
 			searchVariants.put(userPropertyHandler.getName(), uiVariant);
 		}
+		searchVariants.put("login",
+				((SingleSelection) searchVariantForItem.get("login")).getSelectedKey());
 		searchVariants.put("organisations",
 				((SingleSelection) searchVariantForItem.get("organisations")).getSelectedKey());
 		searchVariants.put("courses",
